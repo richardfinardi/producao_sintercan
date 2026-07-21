@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Programação Semanal de Produção V2.0</title>
+    <title>Programação Semanal de Produção V5.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -30,7 +30,7 @@
                     </div>
                 </div>
                 <div>
-                    <h1 class="text-xl font-extrabold tracking-wide text-white">Controle Semanal de Produção V2.0</h1>
+                    <h1 class="text-xl font-extrabold tracking-wide text-white">Controle Semanal de Produção V5.1</h1>
                     <p class="text-xs text-slate-400">Agrupado por <span class="text-amber-400 font-mono">entrega_normalizada</span></p>
                 </div>
             </div>
@@ -369,26 +369,39 @@
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseValue(val));
         }
 
-        function getWeekDetails(date) {
-            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        // Função de cálculo de semanas ajustada para fragmentar semanas que cruzam o mês
+        function getSplitWeekDetails(itemDate) {
+            const year = itemDate.getFullYear();
+            const month = itemDate.getMonth();
+
+            // Cálculo do Número da Semana ISO
+            const d = new Date(Date.UTC(year, month, itemDate.getDate()));
             const dayNum = d.getUTCDay() || 7;
             d.setUTCDate(d.getUTCDate() + 4 - dayNum);
             const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
             const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 
-            const monday = new Date(date);
-            monday.setDate(date.getDate() - (date.getDay() === 0 ? 6 : date.getDay() - 1));
+            // Segunda e Domingo nominais da semana ISO
+            const monday = new Date(itemDate);
+            monday.setDate(itemDate.getDate() - (itemDate.getDay() === 0 ? 6 : itemDate.getDay() - 1));
             
             const sunday = new Date(monday);
             sunday.setDate(monday.getDate() + 6);
 
+            // Intervalo restrito ao mês da data do item
+            const firstDayOfMonth = new Date(year, month, 1);
+            const lastDayOfMonth = new Date(year, month + 1, 0);
+
+            const startSegment = monday < firstDayOfMonth ? firstDayOfMonth : monday;
+            const endSegment = sunday > lastDayOfMonth ? lastDayOfMonth : sunday;
+
             const formatShort = (dt) => `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`;
 
             return {
+                groupKey: `${year}-${String(month + 1).padStart(2, '0')}-W${weekNo}`,
                 weekNum: weekNo,
-                year: monday.getFullYear(),
-                label: `SEMANA ${weekNo} (${formatShort(monday)} A ${formatShort(sunday)})`,
-                monday: monday
+                sortDate: startSegment,
+                label: `SEMANA ${weekNo} (${formatShort(startSegment)} A ${formatShort(endSegment)})`
             };
         }
 
@@ -450,20 +463,19 @@
             const weeksMap = {};
             filtered.forEach(item => {
                 const date = new Date(item.entrega_normalizada);
-                const weekInfo = getWeekDetails(date);
-                const key = `${weekInfo.year}-W${weekInfo.weekNum}`;
+                const weekInfo = getSplitWeekDetails(date);
 
-                if (!weeksMap[key]) {
-                    weeksMap[key] = {
+                if (!weeksMap[weekInfo.groupKey]) {
+                    weeksMap[weekInfo.groupKey] = {
                         label: weekInfo.label,
-                        monday: weekInfo.monday,
+                        sortDate: weekInfo.sortDate,
                         items: []
                     };
                 }
-                weeksMap[key].items.push(item);
+                weeksMap[weekInfo.groupKey].items.push(item);
             });
 
-            const sortedWeeks = Object.values(weeksMap).sort((a, b) => a.monday - b.monday);
+            const sortedWeeks = Object.values(weeksMap).sort((a, b) => a.sortDate - b.sortDate);
 
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
