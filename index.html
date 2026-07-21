@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Programação Semanal de Produção</title>
+    <title>Programação Semanal de Produção V2.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -21,13 +21,16 @@
     <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
             
-            <!-- Título & Logo -->
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-amber-500 rounded-xl text-slate-950 font-bold flex items-center justify-center">
-                    <i data-lucide="factory" class="w-6 h-6"></i>
+            <!-- Título & Logo Maior no Cabeçalho -->
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 shadow-inner">
+                    <img src="./logo.png" alt="Logo" class="h-10 max-h-12 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="hidden p-2 bg-amber-500 rounded-xl text-slate-950 font-bold items-center justify-center">
+                        <i data-lucide="factory" class="w-6 h-6"></i>
+                    </div>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold tracking-wide text-white">Controle Semanal de Produção V1.5</h1>
+                    <h1 class="text-xl font-extrabold tracking-wide text-white">Controle Semanal de Produção V2.0</h1>
                     <p class="text-xs text-slate-400">Agrupado por <span class="text-amber-400 font-mono">entrega_normalizada</span></p>
                 </div>
             </div>
@@ -156,19 +159,12 @@
         </div>
     </main>
 
-    <!-- FOOTER COM MARCA D'ÁGUA / DESENVOLVEDOR -->
+    <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 py-4 mt-8">
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
             <div class="flex items-center gap-2">
                 <i data-lucide="code-2" class="w-4 h-4 text-amber-500"></i>
                 <span>© 2026 Sistema de Gestão de Produção</span>
-            </div>
-
-            <!-- SEU LOGO E ASSINATURA -->
-            <div class="flex items-center gap-2.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-                <span class="text-[11px] text-slate-400 font-medium">Desenvolvido por:</span>
-                <img src="logo.png" alt="Sua Marca" class="h-5 w-auto object-contain fallback-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                <span class="font-bold text-amber-400 tracking-wide text-xs hidden">SUA EMPRESA / NOME</span>
             </div>
         </div>
     </footer>
@@ -259,7 +255,6 @@
             }
         }
 
-        // Função para limpar todos os filtros ativados
         function clearAllFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('clientFilter').value = '';
