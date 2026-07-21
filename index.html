@@ -27,12 +27,12 @@
                     <i data-lucide="factory" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold tracking-wide text-white">Controle Semanal de Produção V1.1</h1>
+                    <h1 class="text-lg font-bold tracking-wide text-white">Controle Semanal de Produção V1.2</h1>
                     <p class="text-xs text-slate-400">Agrupado por <span class="text-amber-400 font-mono">entrega_normalizada</span></p>
                 </div>
             </div>
 
-            <!-- NAVEGADOR DE MÊS (IDÊNTICO À IMAGEM) -->
+            <!-- NAVEGADOR DE MÊS -->
             <div class="flex items-center bg-slate-900/90 border border-slate-700/80 rounded-2xl px-2 py-1.5 shadow-md">
                 <button onclick="changeMonth(-1)" class="p-1.5 hover:bg-slate-800 rounded-xl text-slate-300 hover:text-white transition">
                     <i data-lucide="chevron-left" class="w-5 h-5"></i>
@@ -101,12 +101,28 @@
             <!-- Filtro por Cliente -->
             <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
                 <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
-                <select id="clientFilter" onchange="renderCalendar()" class="text-xs bg-transparent text-white focus:outline-none cursor-pointer max-w-[160px]">
+                <select id="clientFilter" onchange="renderCalendar()" class="text-xs bg-transparent text-white focus:outline-none cursor-pointer max-w-[140px]">
                     <option value="" class="bg-slate-900">Todos os Clientes</option>
                 </select>
             </div>
 
-            <!-- BOTÕES SEPARADOS DE FILTRO -->
+            <!-- Filtro por Status Compras -->
+            <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                <i data-lucide="shopping-cart" class="w-4 h-4 text-slate-400"></i>
+                <select id="comprasFilter" onchange="renderCalendar()" class="text-xs bg-transparent text-white focus:outline-none cursor-pointer max-w-[140px]">
+                    <option value="" class="bg-slate-900">Status Compras (Todos)</option>
+                </select>
+            </div>
+
+            <!-- Filtro por Status Terceiros -->
+            <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                <i data-lucide="truck" class="w-4 h-4 text-slate-400"></i>
+                <select id="terceirosFilter" onchange="renderCalendar()" class="text-xs bg-transparent text-white focus:outline-none cursor-pointer max-w-[140px]">
+                    <option value="" class="bg-slate-900">Status Terceiros (Todos)</option>
+                </select>
+            </div>
+
+            <!-- BOTÕES DE FILTRO SEPARADOS -->
             <div class="flex items-center gap-2">
                 <!-- Botão 1: Período -->
                 <button id="btnToggleMonth" onclick="toggleMonthFilter()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
@@ -165,8 +181,9 @@
                     </div>
                 </div>
 
-                <div class="space-y-1 text-[11px] pt-2 border-t border-slate-800">
+                <div class="space-y-1.5 text-[11px] pt-2 border-t border-slate-800">
                     <div><span class="text-slate-400">Abertura OS:</span> <span id="mAbertura" class="font-medium text-slate-300"></span></div>
+                    <div><span class="text-slate-400">Prazo Entrega Original:</span> <span id="mPrazoOriginal" class="font-bold text-blue-400"></span></div>
                     <div><span class="text-slate-400">Último Apontamento:</span> <span id="mApontamento" class="font-medium text-slate-300"></span></div>
                     <div><span class="text-slate-400">Entrega Normalizada:</span> <span id="mEntregaNorm" class="font-bold text-amber-400"></span></div>
                 </div>
@@ -209,7 +226,7 @@
                 const data = await response.json();
                 rawData = Array.isArray(data) ? data : [data];
                 
-                populateClientDropdown();
+                populateDropdowns();
                 renderCalendar();
             } catch (err) {
                 console.error("Erro ao buscar API do Ngrok:", err);
@@ -219,24 +236,44 @@
             }
         }
 
-        // Preenche o Dropdown de Clientes dinamicamente
-        function populateClientDropdown() {
-            const select = document.getElementById('clientFilter');
-            select.innerHTML = '<option value="" class="bg-slate-900">Todos os Clientes</option>';
+        // Formatação apenas para Data (sem Horário)
+        function formatDateOnly(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '-';
+            return d.toLocaleDateString('pt-BR');
+        }
+
+        // Preenche os Dropdowns de Clientes, Compras e Terceiros dinamicamente
+        function populateDropdowns() {
+            const clientSelect = document.getElementById('clientFilter');
+            const comprasSelect = document.getElementById('comprasFilter');
+            const terceirosSelect = document.getElementById('terceirosFilter');
+
+            clientSelect.innerHTML = '<option value="" class="bg-slate-900">Todos os Clientes</option>';
+            comprasSelect.innerHTML = '<option value="" class="bg-slate-900">Status Compras (Todos)</option>';
+            terceirosSelect.innerHTML = '<option value="" class="bg-slate-900">Status Terceiros (Todos)</option>';
 
             const clients = new Set();
+            const comprasStatus = new Set();
+            const terceirosStatus = new Set();
+
             rawData.forEach(item => {
-                if (item.cliente && item.cliente.trim() !== "") {
-                    clients.add(item.cliente.trim());
-                }
+                if (item.cliente && item.cliente.trim() !== "") clients.add(item.cliente.trim());
+                if (item.status_compras && item.status_compras.trim() !== "") comprasStatus.add(item.status_compras.trim());
+                if (item.status_terceiros && item.status_terceiros.trim() !== "") terceirosStatus.add(item.status_terceiros.trim());
             });
 
-            Array.from(clients).sort().forEach(client => {
-                const opt = document.createElement('option');
-                opt.value = client;
-                opt.textContent = client;
-                opt.className = 'bg-slate-900';
-                select.appendChild(opt);
+            Array.from(clients).sort().forEach(val => {
+                clientSelect.appendChild(new Option(val, val, false, false)).className = 'bg-slate-900';
+            });
+
+            Array.from(comprasStatus).sort().forEach(val => {
+                comprasSelect.appendChild(new Option(val, val, false, false)).className = 'bg-slate-900';
+            });
+
+            Array.from(terceirosStatus).sort().forEach(val => {
+                terceirosSelect.appendChild(new Option(val, val, false, false)).className = 'bg-slate-900';
             });
         }
 
@@ -317,13 +354,15 @@
         }
 
         function renderCalendar() {
-            // Atualizar Label do Mês (Formato da imagem: ex "Julho De 2026")
+            // Atualizar Label do Mês
             const monthStr = currentDate.toLocaleDateString('pt-BR', { month: 'long' });
             const capitalizedMonth = monthStr.charAt(0).toUpperCase() + monthStr.slice(1);
             document.getElementById('currentMonthYearLabel').textContent = `${capitalizedMonth} De ${currentDate.getFullYear()}`;
 
             const search = document.getElementById('searchInput').value.toLowerCase();
             const selectedClient = document.getElementById('clientFilter').value;
+            const selectedCompras = document.getElementById('comprasFilter').value;
+            const selectedTerceiros = document.getElementById('terceirosFilter').value;
 
             // 1. Filtrar Dados
             let filtered = rawData.filter(item => {
@@ -345,11 +384,15 @@
                 }
 
                 // Filtro 3: Cliente
-                if (selectedClient && item.cliente !== selectedClient) {
-                    return false;
-                }
+                if (selectedClient && item.cliente !== selectedClient) return false;
 
-                // Filtro 4: Busca Geral
+                // Filtro 4: Status Compras
+                if (selectedCompras && item.status_compras !== selectedCompras) return false;
+
+                // Filtro 5: Status Terceiros
+                if (selectedTerceiros && item.status_terceiros !== selectedTerceiros) return false;
+
+                // Filtro 6: Busca Geral
                 if (search) {
                     const matchSearch = (
                         (item.n_os && item.n_os.toString().toLowerCase().includes(search)) ||
@@ -476,9 +519,15 @@
             document.getElementById('mProducao').textContent = item.status_producao || '-';
             document.getElementById('mAtrasada').textContent = item.atrasada === 'sim' ? 'SIM' : 'NÃO';
             
-            document.getElementById('mAbertura').textContent = item.abertura_os ? new Date(item.abertura_os).toLocaleString('pt-BR') : '-';
-            document.getElementById('mApontamento').textContent = item.ultimo_apontamento ? new Date(item.ultimo_apontamento).toLocaleString('pt-BR') : '-';
-            document.getElementById('mEntregaNorm').textContent = item.entrega_normalizada ? new Date(item.entrega_normalizada).toLocaleString('pt-BR') : '-';
+            // Regra do Prazo Original: Se tiver orçamento -> prev_entrega_orcamento; Senão -> prev_entrega_os
+            const temOrcamento = item.possui_orcamento && item.possui_orcamento.toLowerCase() === 'sim';
+            const prazoOriginalStr = temOrcamento ? item.prev_entrega_orcamento : item.prev_entrega_os;
+
+            // Formatação Apenas Data (Sem Horário)
+            document.getElementById('mAbertura').textContent = formatDateOnly(item.abertura_os);
+            document.getElementById('mPrazoOriginal').textContent = formatDateOnly(prazoOriginalStr);
+            document.getElementById('mApontamento').textContent = formatDateOnly(item.ultimo_apontamento);
+            document.getElementById('mEntregaNorm').textContent = formatDateOnly(item.entrega_normalizada);
 
             const modal = document.getElementById('osModal');
             modal.classList.remove('hidden');
