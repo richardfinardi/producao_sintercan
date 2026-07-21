@@ -43,7 +43,7 @@
     <div class="bg-slate-800 border-b border-slate-700 text-white shadow-inner">
         <div class="max-w-7xl mx-auto px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/60">
-                <span class="text-[10px] text-slate-400 font-bold uppercase block">Total de OS</span>
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Total de OS (Filtrado)</span>
                 <span id="metricTotalOS" class="text-xl font-extrabold text-slate-100">0</span>
             </div>
             <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/60">
@@ -72,12 +72,12 @@
                        class="w-full text-xs bg-transparent focus:outline-none">
             </div>
 
-            <!-- Filtro de Visualização -->
+            <!-- Botão de Alternância de Filtros -->
             <div class="flex items-center gap-2">
-                <select id="viewFilter" onchange="renderCalendar()" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none font-semibold text-slate-700">
-                    <option value="all">Exibir Todas as Semanas</option>
-                    <option value="current_month">Apenas Mês Atual</option>
-                </select>
+                <button id="btnToggleAll" onclick="toggleViewMode()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                    <i data-lucide="filter" class="w-3.5 h-3.5 text-amber-600"></i>
+                    <span id="toggleButtonText">Modo Padrão (Mês Atual + Com Orçamento)</span>
+                </button>
             </div>
         </div>
 
@@ -140,6 +140,9 @@
     <script>
         const API_URL = 'https://dragonfly-overbill-eagle.ngrok-free.dev/PRODUCAO';
         let rawData = [];
+        
+        // Estado do Filtro: True = Padrão (Apenas Mês Atual + Com Orçamento), False = Exibir Tudo
+        let isDefaultFilter = true;
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -151,27 +154,37 @@
             if(icon) icon.classList.add('animate-spin');
 
             try {
-                // Header ngrok-skip-browser-warning é vital para ngrok free
-                const response = await fetch(API_URL, {
-                    headers: { 'ngrok-skip-browser-warning': 'true' }
-                });
-
+                const response = await fetch(`${API_URL}?ngrok-skip-browser-warning=true`);
                 if (!response.ok) throw new Error(`Status HTTP: ${response.status}`);
                 
                 const data = await response.json();
                 rawData = Array.isArray(data) ? data : [data];
                 
-                console.log("Dados recebidos da API:", rawData);
                 renderCalendar();
             } catch (err) {
                 console.error("Erro ao buscar API do Ngrok:", err);
-                alert("Erro ao conectar com a API no Ngrok! Verifique se o link ngrok está online.");
+                alert("Erro de conexão (CORS/Ngrok)! Verifique se habilitou o CORS no backend da sua API.");
             } finally {
                 if(icon) icon.classList.remove('animate-spin');
             }
         }
 
-        // Função de Ajuda para Tratar e Parsear Valores
+        function toggleViewMode() {
+            isDefaultFilter = !isDefaultFilter;
+            const btnText = document.getElementById('toggleButtonText');
+            const btn = document.getElementById('btnToggleAll');
+
+            if (isDefaultFilter) {
+                btnText.textContent = "Modo Padrão (Mês Atual + Com Orçamento)";
+                btn.className = "px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition flex items-center gap-1.5";
+            } else {
+                btnText.textContent = "Exibindo Tudo (Todas Semanas + Sem Orçamento)";
+                btn.className = "px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-600 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm";
+            }
+
+            renderCalendar();
+        }
+
         function parseValue(val) {
             if (val === null || val === undefined || val === '') return 0;
             if (typeof val === 'number') return val;
@@ -183,7 +196,6 @@
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseValue(val));
         }
 
-        // Obtém o número da semana no ano (ISO Week) e o intervalo de datas
         function getWeekDetails(date) {
             const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
             const dayNum = d.getUTCDay() || 7;
@@ -191,7 +203,6 @@
             const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
             const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 
-            // Calcular Segunda e Domingo dessa semana
             const monday = new Date(date);
             monday.setDate(date.getDate() - (date.getDay() === 0 ? 6 : date.getDay() - 1));
             
@@ -210,20 +221,40 @@
 
         function renderCalendar() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const viewFilter = document.getElementById('viewFilter').value;
             const now = new Date();
 
-            // 1. Filtrar Busca
+            // 1. Filtragem de dados baseada nas regras de negócio (Padrão vs Tudo)
             let filtered = rawData.filter(item => {
-                if (!search) return true;
-                return (
-                    (item.n_os && item.n_os.toString().toLowerCase().includes(search)) ||
-                    (item.n_pedido && item.n_pedido.toString().toLowerCase().includes(search)) ||
-                    (item.titulo && item.titulo.toLowerCase().includes(search))
-                );
+                if (!item.entrega_normalizada) return false;
+                const date = new Date(item.entrega_normalizada);
+                if (isNaN(date)) return false;
+
+                // Se estiver no modo padrão, trava no mês atual
+                if (isDefaultFilter) {
+                    if (date.getMonth() !== now.getMonth() || date.getFullYear() !== now.getFullYear()) {
+                        return false;
+                    }
+                    // E trava apenas OS que possuem orçamento (possui_orcamento === 'sim' ou valor válido > 0)
+                    const temOrcamento = (item.possui_orcamento && item.possui_orcamento.toLowerCase() === 'sim') || (parseValue(item.preco_geral_a_vista || item.orcamento) > 0);
+                    if (!temOrcamento) {
+                        return false;
+                    }
+                }
+
+                // Filtro por texto de busca
+                if (search) {
+                    const matchSearch = (
+                        (item.n_os && item.n_os.toString().toLowerCase().includes(search)) ||
+                        (item.n_pedido && item.n_pedido.toString().toLowerCase().includes(search)) ||
+                        (item.titulo && item.titulo.toLowerCase().includes(search))
+                    );
+                    if (!matchSearch) return false;
+                }
+
+                return true;
             });
 
-            // 2. Atualizar Métricas
+            // 2. Atualizar Métricas do Topo
             let totalVal = 0, atrasadasCount = 0, semOrcCount = 0;
             filtered.forEach(item => {
                 const val = parseValue(item.preco_geral_a_vista || item.orcamento);
@@ -241,15 +272,7 @@
             const weeksMap = {};
 
             filtered.forEach(item => {
-                if (!item.entrega_normalizada) return;
                 const date = new Date(item.entrega_normalizada);
-                if (isNaN(date)) return;
-
-                // Filtro opcional: apenas mês atual
-                if (viewFilter === 'current_month') {
-                    if (date.getMonth() !== now.getMonth() || date.getFullYear() !== now.getFullYear()) return;
-                }
-
                 const weekInfo = getWeekDetails(date);
                 const key = `${weekInfo.year}-W${weekInfo.weekNum}`;
 
@@ -263,10 +286,9 @@
                 weeksMap[key].items.push(item);
             });
 
-            // Ordenar semanas por data
             const sortedWeeks = Object.values(weeksMap).sort((a, b) => a.monday - b.monday);
 
-            // 4. Renderizar
+            // 4. Renderizar Colunas
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
 
@@ -274,7 +296,7 @@
                 grid.innerHTML = `
                     <div class="col-span-full bg-white p-8 text-center rounded-xl border border-slate-200 text-slate-400">
                         <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-                        Nenhuma Ordem de Serviço encontrada para os filtros atuais.
+                        Nenhuma Ordem de Serviço encontrada com os filtros atuais. Clique no botão superior para exibir tudo.
                     </div>
                 `;
                 lucide.createIcons();
