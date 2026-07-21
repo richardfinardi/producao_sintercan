@@ -141,7 +141,7 @@
         const API_URL = 'https://dragonfly-overbill-eagle.ngrok-free.dev/PRODUCAO';
         let rawData = [];
         
-        // Estado do Filtro: True = Padrão (Apenas Mês Atual + Com Orçamento), False = Exibir Tudo
+        // Estado do Filtro: True = Padrão (Mês Atual + Com Orçamento), False = Exibir Tudo
         let isDefaultFilter = true;
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -154,7 +154,13 @@
             if(icon) icon.classList.add('animate-spin');
 
             try {
-                const response = await fetch(`${API_URL}?ngrok-skip-browser-warning=true`);
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'ngrok-skip-browser-warning': '69420'
+                    }
+                });
+
                 if (!response.ok) throw new Error(`Status HTTP: ${response.status}`);
                 
                 const data = await response.json();
@@ -163,7 +169,7 @@
                 renderCalendar();
             } catch (err) {
                 console.error("Erro ao buscar API do Ngrok:", err);
-                alert("Erro de conexão (CORS/Ngrok)! Verifique se habilitou o CORS no backend da sua API.");
+                alert("Erro de conexão! Verifique se a API local e o Ngrok estão ativos.");
             } finally {
                 if(icon) icon.classList.remove('animate-spin');
             }
