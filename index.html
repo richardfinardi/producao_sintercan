@@ -27,7 +27,7 @@
                     <i data-lucide="factory" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold tracking-wide text-white">Controle Semanal de Produção V1.3</h1>
+                    <h1 class="text-lg font-bold tracking-wide text-white">Controle Semanal de Produção</h1>
                     <p class="text-xs text-slate-400">Agrupado por <span class="text-amber-400 font-mono">entrega_normalizada</span></p>
                 </div>
             </div>
@@ -91,10 +91,10 @@
         
         <div class="bg-slate-900 p-3 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-sm">
             
-            <!-- Busca Geral -->
+            <!-- Busca Geral Universal (Pesquisa em qualquer campo do JSON) -->
             <div class="flex items-center gap-2 flex-1 min-w-[200px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
                 <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
-                <input type="text" id="searchInput" oninput="renderCalendar()" placeholder="Buscar por OS, Pedido, Orçamento, Título..." 
+                <input type="text" id="searchInput" oninput="renderCalendar()" placeholder="Pesquisar qualquer coisa (OS, Pedido, SC, Título, Cliente, Status...)" 
                        class="w-full text-xs bg-transparent text-white focus:outline-none placeholder-slate-500">
             </div>
 
@@ -238,6 +238,13 @@
             }
         }
 
+        // Função para formatar o título juntando SC + Título
+        function getFullTitle(item) {
+            const sc = item.sc ? item.sc.toString().trim() : '';
+            const titulo = item.titulo ? item.titulo.toString().trim() : 'Sem título';
+            return sc ? `${sc} - ${titulo}` : titulo;
+        }
+
         function formatDateOnly(dateStr) {
             if (!dateStr) return '-';
             const d = new Date(dateStr);
@@ -356,7 +363,7 @@
             const capitalizedMonth = monthStr.charAt(0).toUpperCase() + monthStr.slice(1);
             document.getElementById('currentMonthYearLabel').textContent = `${capitalizedMonth} De ${currentDate.getFullYear()}`;
 
-            const search = document.getElementById('searchInput').value.toLowerCase();
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
             const selectedClient = document.getElementById('clientFilter').value;
             const selectedCompras = document.getElementById('comprasFilter').value;
             const selectedTerceiros = document.getElementById('terceirosFilter').value;
@@ -381,15 +388,14 @@
                 if (selectedCompras && item.status_compras !== selectedCompras) return false;
                 if (selectedTerceiros && item.status_terceiros !== selectedTerceiros) return false;
 
+                // Busca Universal: Converte todos os valores do objeto JSON em texto e pesquisa
                 if (search) {
-                    const matchSearch = (
-                        (item.n_os && item.n_os.toString().toLowerCase().includes(search)) ||
-                        (item.n_pedido && item.n_pedido.toString().toLowerCase().includes(search)) ||
-                        (item.orcamento && item.orcamento.toString().toLowerCase().includes(search)) ||
-                        (item.titulo && item.titulo.toLowerCase().includes(search)) ||
-                        (item.cliente && item.cliente.toLowerCase().includes(search))
-                    );
-                    if (!matchSearch) return false;
+                    const allValuesText = Object.values(item)
+                        .filter(v => v !== null && v !== undefined)
+                        .join(' ')
+                        .toLowerCase();
+                    
+                    if (!allValuesText.includes(search)) return false;
                 }
 
                 return true;
@@ -465,7 +471,7 @@
             lucide.createIcons();
         }
 
-        // Renderização dos Cards (Com status principal e status detalhados no lado de fora)
+        // Renderização dos Cards
         function renderItemCard(item) {
             const isAtrasada = item.atrasada === 'sim';
             const val = parseValue(item.preco_geral_a_vista || item.orcamento);
@@ -475,6 +481,7 @@
             else if (val === 0) valColor = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
 
             const payload = JSON.stringify(item).replace(/'/g, "&apos;");
+            const fullTitle = getFullTitle(item);
 
             return `
                 <div onclick='openModal(${payload})' class="border border-slate-800 rounded-xl p-2.5 bg-slate-950/80 hover:border-amber-500/50 hover:shadow-lg transition cursor-pointer flex flex-col gap-1.5 text-xs">
@@ -486,7 +493,7 @@
                         <span class="px-1.5 py-0.5 rounded text-[10px] ${valColor}">${formatBRL(val)}</span>
                     </div>
 
-                    <!-- Badge do Novo Campo STATUS -->
+                    <!-- Badge do Status -->
                     ${item.status ? `
                         <div class="flex items-center gap-1">
                             <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">
@@ -495,12 +502,12 @@
                         </div>
                     ` : ''}
 
-                    <!-- Título -->
-                    <div class="text-[11px] text-slate-300 line-clamp-2 leading-snug font-medium">
-                        ${item.titulo || 'Sem título'}
+                    <!-- Título unificado com SC (ex: SC6325 - SUBCONJUNTO...) -->
+                    <div class="text-[11px] text-slate-300 line-clamp-2 leading-snug font-medium" title="${fullTitle}">
+                        ${fullTitle}
                     </div>
 
-                    <!-- Bloco de Status da Operação (Compras, Terceiros, Produção) -->
+                    <!-- Bloco de Status da Operação -->
                     <div class="grid grid-cols-1 gap-0.5 text-[10px] bg-slate-900/90 p-1.5 rounded-lg border border-slate-800/80 text-slate-400">
                         <div class="flex items-center justify-between truncate">
                             <span class="text-slate-500 flex items-center gap-1"><i data-lucide="shopping-cart" class="w-3 h-3 text-slate-400"></i> Compras:</span>
@@ -516,7 +523,7 @@
                         </div>
                     </div>
 
-                    <!-- Rodapé do Card (Cliente e Prazos) -->
+                    <!-- Rodapé do Card -->
                     <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-900">
                         <span class="truncate max-w-[110px]" title="${item.cliente || 'Sem cliente'}">${item.cliente || 'Sem cliente'}</span>
                         <span class="${isAtrasada ? 'text-red-400 font-bold' : 'text-slate-400'}">${isAtrasada ? 'Atrasado' : 'No prazo'}</span>
@@ -527,13 +534,12 @@
 
         function openModal(item) {
             document.getElementById('mOS').textContent = `OS #${item.n_os}`;
-            document.getElementById('mTitulo').textContent = item.titulo || '-';
+            document.getElementById('mTitulo').textContent = getFullTitle(item);
             document.getElementById('mPedido').textContent = item.n_pedido || 'Não informado';
             document.getElementById('mCliente').textContent = item.cliente || 'Não informado';
             document.getElementById('mPreco').textContent = formatBRL(item.preco_geral_a_vista || item.orcamento);
             document.getElementById('mPossuiOrcamento').textContent = item.possui_orcamento || '-';
             
-            // Exibição do Número do Orçamento dentro do Modal
             document.getElementById('mNumOrcamento').textContent = item.orcamento || 'Não possui';
 
             document.getElementById('mCompras').textContent = item.status_compras || '-';
