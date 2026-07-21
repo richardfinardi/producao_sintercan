@@ -27,7 +27,7 @@
                     <i data-lucide="factory" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold tracking-wide text-white">Controle Semanal de Produção V1.2</h1>
+                    <h1 class="text-lg font-bold tracking-wide text-white">Controle Semanal de Produção V1.3</h1>
                     <p class="text-xs text-slate-400">Agrupado por <span class="text-amber-400 font-mono">entrega_normalizada</span></p>
                 </div>
             </div>
@@ -94,7 +94,7 @@
             <!-- Busca Geral -->
             <div class="flex items-center gap-2 flex-1 min-w-[200px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
                 <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
-                <input type="text" id="searchInput" oninput="renderCalendar()" placeholder="Buscar por OS, Pedido, Título..." 
+                <input type="text" id="searchInput" oninput="renderCalendar()" placeholder="Buscar por OS, Pedido, Orçamento, Título..." 
                        class="w-full text-xs bg-transparent text-white focus:outline-none placeholder-slate-500">
             </div>
 
@@ -168,7 +168,11 @@
                     <div><span class="text-slate-400 block font-semibold">Nº Pedido</span><span id="mPedido" class="font-bold text-slate-200"></span></div>
                     <div><span class="text-slate-400 block font-semibold">Cliente</span><span id="mCliente" class="font-bold text-slate-200"></span></div>
                     <div><span class="text-slate-400 block font-semibold">Preço Geral / Valor</span><span id="mPreco" class="font-bold text-emerald-400"></span></div>
-                    <div><span class="text-slate-400 block font-semibold">Possui Orçamento</span><span id="mOrcamento" class="font-bold text-slate-200"></span></div>
+                    <div><span class="text-slate-400 block font-semibold">Possui Orçamento</span><span id="mPossuiOrcamento" class="font-bold text-slate-200"></span></div>
+                    <div class="col-span-2 border-t border-slate-800/80 pt-1.5 mt-0.5">
+                        <span class="text-slate-400 block font-semibold">Nº do Orçamento</span>
+                        <span id="mNumOrcamento" class="font-bold text-amber-400"></span>
+                    </div>
                 </div>
 
                 <div class="space-y-1.5">
@@ -199,12 +203,10 @@
         const API_URL = 'https://dragonfly-overbill-eagle.ngrok-free.dev/PRODUCAO';
         let rawData = [];
         
-        // Data base do Navegador de Mês
         let currentDate = new Date();
 
-        // Estados dos Filtros
-        let onlyCurrentMonth = true; // Por padrão exibe apenas o mês selecionado
-        let onlyWithBudget = true;    // Por padrão exibe apenas com orçamento
+        let onlyCurrentMonth = true;
+        let onlyWithBudget = true;
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -236,7 +238,6 @@
             }
         }
 
-        // Formatação apenas para Data (sem Horário)
         function formatDateOnly(dateStr) {
             if (!dateStr) return '-';
             const d = new Date(dateStr);
@@ -244,7 +245,6 @@
             return d.toLocaleDateString('pt-BR');
         }
 
-        // Preenche os Dropdowns de Clientes, Compras e Terceiros dinamicamente
         function populateDropdowns() {
             const clientSelect = document.getElementById('clientFilter');
             const comprasSelect = document.getElementById('comprasFilter');
@@ -277,7 +277,6 @@
             });
         }
 
-        // Navegação de Mês
         function changeMonth(delta) {
             currentDate.setMonth(currentDate.getMonth() + delta);
             renderCalendar();
@@ -288,7 +287,6 @@
             renderCalendar();
         }
 
-        // Alternadores dos Filtros
         function toggleMonthFilter() {
             onlyCurrentMonth = !onlyCurrentMonth;
             const btn = document.getElementById('btnToggleMonth');
@@ -354,7 +352,6 @@
         }
 
         function renderCalendar() {
-            // Atualizar Label do Mês
             const monthStr = currentDate.toLocaleDateString('pt-BR', { month: 'long' });
             const capitalizedMonth = monthStr.charAt(0).toUpperCase() + monthStr.slice(1);
             document.getElementById('currentMonthYearLabel').textContent = `${capitalizedMonth} De ${currentDate.getFullYear()}`;
@@ -364,39 +361,31 @@
             const selectedCompras = document.getElementById('comprasFilter').value;
             const selectedTerceiros = document.getElementById('terceirosFilter').value;
 
-            // 1. Filtrar Dados
             let filtered = rawData.filter(item => {
                 if (!item.entrega_normalizada) return false;
                 const date = new Date(item.entrega_normalizada);
                 if (isNaN(date)) return false;
 
-                // Filtro 1: Mês Selecionado
                 if (onlyCurrentMonth) {
                     if (date.getMonth() !== currentDate.getMonth() || date.getFullYear() !== currentDate.getFullYear()) {
                         return false;
                     }
                 }
 
-                // Filtro 2: Orçamento
                 if (onlyWithBudget) {
                     const hasBudget = (item.possui_orcamento && item.possui_orcamento.toLowerCase() === 'sim') || (parseValue(item.preco_geral_a_vista || item.orcamento) > 0);
                     if (!hasBudget) return false;
                 }
 
-                // Filtro 3: Cliente
                 if (selectedClient && item.cliente !== selectedClient) return false;
-
-                // Filtro 4: Status Compras
                 if (selectedCompras && item.status_compras !== selectedCompras) return false;
-
-                // Filtro 5: Status Terceiros
                 if (selectedTerceiros && item.status_terceiros !== selectedTerceiros) return false;
 
-                // Filtro 6: Busca Geral
                 if (search) {
                     const matchSearch = (
                         (item.n_os && item.n_os.toString().toLowerCase().includes(search)) ||
                         (item.n_pedido && item.n_pedido.toString().toLowerCase().includes(search)) ||
+                        (item.orcamento && item.orcamento.toString().toLowerCase().includes(search)) ||
                         (item.titulo && item.titulo.toLowerCase().includes(search)) ||
                         (item.cliente && item.cliente.toLowerCase().includes(search))
                     );
@@ -406,7 +395,6 @@
                 return true;
             });
 
-            // 2. Atualizar Métricas
             let totalVal = 0, atrasadasCount = 0, semOrcCount = 0;
             filtered.forEach(item => {
                 const val = parseValue(item.preco_geral_a_vista || item.orcamento);
@@ -420,7 +408,6 @@
             document.getElementById('metricValorTotal').textContent = formatBRL(totalVal);
             document.getElementById('metricSemOrcamento').textContent = semOrcCount;
 
-            // 3. Agrupar por Semana
             const weeksMap = {};
             filtered.forEach(item => {
                 const date = new Date(item.entrega_normalizada);
@@ -439,7 +426,6 @@
 
             const sortedWeeks = Object.values(weeksMap).sort((a, b) => a.monday - b.monday);
 
-            // 4. Renderizar Colunas
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
 
@@ -479,6 +465,7 @@
             lucide.createIcons();
         }
 
+        // Renderização dos Cards (Com status principal e status detalhados no lado de fora)
         function renderItemCard(item) {
             const isAtrasada = item.atrasada === 'sim';
             const val = parseValue(item.preco_geral_a_vista || item.orcamento);
@@ -490,16 +477,47 @@
             const payload = JSON.stringify(item).replace(/'/g, "&apos;");
 
             return `
-                <div onclick='openModal(${payload})' class="border border-slate-800 rounded-xl p-2.5 bg-slate-950/80 hover:border-amber-500/50 hover:shadow-lg transition cursor-pointer flex flex-col gap-1 text-xs">
+                <div onclick='openModal(${payload})' class="border border-slate-800 rounded-xl p-2.5 bg-slate-950/80 hover:border-amber-500/50 hover:shadow-lg transition cursor-pointer flex flex-col gap-1.5 text-xs">
+                    
+                    <!-- Linha do Pedido, OS e Valor -->
                     <div class="flex items-center justify-between font-mono">
                         <span class="font-semibold text-slate-300 truncate max-w-[90px]">${item.n_pedido || 'SEM PEDIDO'}</span>
                         <span class="bg-slate-900 text-amber-400 px-1.5 py-0.5 rounded font-bold border border-slate-800">OS ${item.n_os}</span>
                         <span class="px-1.5 py-0.5 rounded text-[10px] ${valColor}">${formatBRL(val)}</span>
                     </div>
-                    <div class="text-[11px] text-slate-400 line-clamp-2 leading-snug">
+
+                    <!-- Badge do Novo Campo STATUS -->
+                    ${item.status ? `
+                        <div class="flex items-center gap-1">
+                            <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                                ${item.status}
+                            </span>
+                        </div>
+                    ` : ''}
+
+                    <!-- Título -->
+                    <div class="text-[11px] text-slate-300 line-clamp-2 leading-snug font-medium">
                         ${item.titulo || 'Sem título'}
                     </div>
-                    <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-900 mt-0.5">
+
+                    <!-- Bloco de Status da Operação (Compras, Terceiros, Produção) -->
+                    <div class="grid grid-cols-1 gap-0.5 text-[10px] bg-slate-900/90 p-1.5 rounded-lg border border-slate-800/80 text-slate-400">
+                        <div class="flex items-center justify-between truncate">
+                            <span class="text-slate-500 flex items-center gap-1"><i data-lucide="shopping-cart" class="w-3 h-3 text-slate-400"></i> Compras:</span>
+                            <span class="font-semibold text-slate-300 truncate max-w-[120px]">${item.status_compras || '-'}</span>
+                        </div>
+                        <div class="flex items-center justify-between truncate">
+                            <span class="text-slate-500 flex items-center gap-1"><i data-lucide="truck" class="w-3 h-3 text-slate-400"></i> Terceiros:</span>
+                            <span class="font-semibold text-slate-300 truncate max-w-[120px]">${item.status_terceiros || '-'}</span>
+                        </div>
+                        <div class="flex items-center justify-between truncate">
+                            <span class="text-slate-500 flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3 text-slate-400"></i> Produção:</span>
+                            <span class="font-bold text-blue-400">${item.status_producao || '0%'}</span>
+                        </div>
+                    </div>
+
+                    <!-- Rodapé do Card (Cliente e Prazos) -->
+                    <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-900">
                         <span class="truncate max-w-[110px]" title="${item.cliente || 'Sem cliente'}">${item.cliente || 'Sem cliente'}</span>
                         <span class="${isAtrasada ? 'text-red-400 font-bold' : 'text-slate-400'}">${isAtrasada ? 'Atrasado' : 'No prazo'}</span>
                     </div>
@@ -513,17 +531,19 @@
             document.getElementById('mPedido').textContent = item.n_pedido || 'Não informado';
             document.getElementById('mCliente').textContent = item.cliente || 'Não informado';
             document.getElementById('mPreco').textContent = formatBRL(item.preco_geral_a_vista || item.orcamento);
-            document.getElementById('mOrcamento').textContent = item.possui_orcamento || '-';
+            document.getElementById('mPossuiOrcamento').textContent = item.possui_orcamento || '-';
+            
+            // Exibição do Número do Orçamento dentro do Modal
+            document.getElementById('mNumOrcamento').textContent = item.orcamento || 'Não possui';
+
             document.getElementById('mCompras').textContent = item.status_compras || '-';
             document.getElementById('mTerceiros').textContent = item.status_terceiros || '-';
             document.getElementById('mProducao').textContent = item.status_producao || '-';
             document.getElementById('mAtrasada').textContent = item.atrasada === 'sim' ? 'SIM' : 'NÃO';
             
-            // Regra do Prazo Original: Se tiver orçamento -> prev_entrega_orcamento; Senão -> prev_entrega_os
             const temOrcamento = item.possui_orcamento && item.possui_orcamento.toLowerCase() === 'sim';
             const prazoOriginalStr = temOrcamento ? item.prev_entrega_orcamento : item.prev_entrega_os;
 
-            // Formatação Apenas Data (Sem Horário)
             document.getElementById('mAbertura').textContent = formatDateOnly(item.abertura_os);
             document.getElementById('mPrazoOriginal').textContent = formatDateOnly(prazoOriginalStr);
             document.getElementById('mApontamento').textContent = formatDateOnly(item.ultimo_apontamento);
