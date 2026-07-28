@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
 <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V5.4</title>
+    <title>Programação Semanal de Produção Sintercan V5.5</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -46,7 +46,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.4</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.5</span></p>
                 </div>
             </div>
 
@@ -179,7 +179,7 @@
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
             <div class="flex items-center gap-2">
                 <i data-lucide="code-2" class="w-4 h-4 text-amber-500"></i>
-                <span>© 2026 Sistema de Gestão de Produção V5.4</span>
+                <span>© 2026 Sistema de Gestão de Produção V5.5</span>
             </div>
         </div>
     </footer>
@@ -544,6 +544,20 @@
             }
 
             sortedWeeks.forEach(week => {
+                // Ordena as OSs da semana pelo Prazo Entrega Original (mais antiga primeiro)
+                week.items.sort((a, b) => {
+                    const temOrcA = a.possui_orcamento && a.possui_orcamento.toLowerCase() === 'sim';
+                    const temOrcB = b.possui_orcamento && b.possui_orcamento.toLowerCase() === 'sim';
+
+                    const dateStrA = temOrcA ? a.prev_entrega_orcamento : a.prev_entrega_os;
+                    const dateStrB = temOrcB ? b.prev_entrega_orcamento : b.prev_entrega_os;
+
+                    const timeA = dateStrA ? new Date(dateStrA).getTime() : Infinity;
+                    const timeB = dateStrB ? new Date(dateStrB).getTime() : Infinity;
+
+                    return timeA - timeB;
+                });
+
                 const weekTotal = week.items.reduce((acc, i) => acc + parseValue(i.preco_geral_a_vista || i.orcamento), 0);
                 
                 const col = document.createElement('div');
