@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
 <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V5.3</title>
+    <title>Programação Semanal de Produção Sintercan V5.4</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -46,7 +46,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.3</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.4</span></p>
                 </div>
             </div>
 
@@ -179,14 +179,14 @@
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
             <div class="flex items-center gap-2">
                 <i data-lucide="code-2" class="w-4 h-4 text-amber-500"></i>
-                <span>© 2026 Sistema de Gestão de Produção V5.3</span>
+                <span>© 2026 Sistema de Gestão de Produção V5.4</span>
             </div>
         </div>
     </footer>
 
     <!-- MODAL DE DETALHES -->
     <div id="osModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 text-slate-100 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-800">
+        <div class="bg-slate-900 text-slate-100 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-800 max-h-[90vh] flex flex-col">
             <div class="bg-slate-950 px-6 py-4 flex justify-between items-center border-b border-slate-800">
                 <div>
                     <span id="mOS" class="text-xs font-bold bg-amber-500 text-slate-950 px-2 py-0.5 rounded uppercase"></span>
@@ -195,7 +195,7 @@
                 <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             
-            <div class="p-5 space-y-3 text-xs">
+            <div class="p-5 space-y-3 text-xs overflow-y-auto custom-scroll flex-1">
                 <div class="grid grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
                     <div><span class="text-slate-400 block font-semibold">Nº Pedido</span><span id="mPedido" class="font-bold text-slate-200"></span></div>
                     <div><span class="text-slate-400 block font-semibold">Cliente</span><span id="mCliente" class="font-bold text-slate-200"></span></div>
@@ -207,7 +207,7 @@
                     </div>
                 </div>
 
-                <!-- BLOCO NOVOS CAMPOS DE QUANTIDADE RESTANTE -->
+                <!-- BLOCO QUANTIDADES RESTANTES -->
                 <div class="grid grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800/80">
                     <div>
                         <span class="text-slate-400 block font-semibold">Qtd. Restante Orçamento</span>
@@ -231,13 +231,41 @@
 
                 <div class="space-y-1.5 text-[11px] pt-2 border-t border-slate-800">
                     <div><span class="text-slate-400">Abertura OS:</span> <span id="mAbertura" class="font-medium text-slate-300"></span></div>
+                    <div><span class="text-slate-400">Prev. Entrega OS (TOS.DT_PREVISTA):</span> <span id="mPrevEntregaOS" class="font-bold text-amber-400"></span></div>
                     <div><span class="text-slate-400">Prazo Entrega Original:</span> <span id="mPrazoOriginal" class="font-bold text-blue-400"></span></div>
                     <div><span class="text-slate-400">Último Apontamento:</span> <span id="mApontamento" class="font-medium text-slate-300"></span></div>
                     <div><span class="text-slate-400">Entrega Normalizada:</span> <span id="mEntregaNorm" class="font-bold text-amber-400"></span></div>
                 </div>
+
+                <!-- PAINEL EDICAO PRAZO (ESCONDIDO POR PADRÃO) -->
+                <div id="boxEditPrazo" class="hidden mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
+                    <h5 class="font-bold text-amber-400 text-xs flex items-center gap-1">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Alterar Data Prevista (TOS.DT_PREVISTA)
+                    </h5>
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">Nova Data de Entrega:</label>
+                        <input type="date" id="inputNovaData" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">Justificativa da Alteração (Obrigatório):</label>
+                        <textarea id="txtJustificativa" rows="2" placeholder="Motivo do adiamento ou antecipação..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-amber-400 placeholder-slate-600"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-1">
+                        <button onclick="toggleEditPrazo(false)" class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700">Cancelar</button>
+                        <button id="btnSalvarData" onclick="salvarNovaData()" class="px-3 py-1 bg-amber-500 text-slate-950 font-bold rounded-lg text-xs hover:bg-amber-400 flex items-center gap-1">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i> Salvar
+                        </button>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="bg-slate-950 px-5 py-3 border-t border-slate-800 flex justify-end">
+            <div class="bg-slate-950 px-5 py-3 border-t border-slate-800 flex justify-between items-center">
+                <button id="btnOpenEditPrazo" onclick="toggleEditPrazo(true)" class="px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-xl font-semibold text-xs hover:bg-amber-500/20 flex items-center gap-1.5 transition">
+                    <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                    <span>Alterar Data de Entrega</span>
+                </button>
+
                 <button onclick="closeModal()" class="px-4 py-1.5 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-700">Fechar</button>
             </div>
         </div>
@@ -246,6 +274,7 @@
     <script>
         const API_URL = 'https://sintercan.consultoriarf.net/PRODUCAO';
         let rawData = [];
+        let currentOSItem = null; // Guarda a OS aberta no modal
         
         let currentDate = new Date();
 
@@ -595,6 +624,8 @@
         }
 
         function openModal(item) {
+            currentOSItem = item;
+            
             document.getElementById('mOS').textContent = `OS #${item.n_os}`;
             document.getElementById('mTitulo').textContent = getFullTitle(item);
             document.getElementById('mPedido').textContent = item.n_pedido || 'Não informado';
@@ -604,7 +635,6 @@
             
             document.getElementById('mNumOrcamento').textContent = item.orcamento || 'Não possui';
 
-            // Mapeamento dos novos campos de quantidade restante
             document.getElementById('mQtdOrcamento').textContent = item.qtde_restante_orcamento ?? 0;
             document.getElementById('mQtdEstoque').textContent = item.qtde_restante_estoque ?? 0;
 
@@ -617,19 +647,97 @@
             const prazoOriginalStr = temOrcamento ? item.prev_entrega_orcamento : item.prev_entrega_os;
 
             document.getElementById('mAbertura').textContent = formatDateOnly(item.abertura_os);
+            document.getElementById('mPrevEntregaOS').textContent = formatDateOnly(item.prev_entrega_os);
             document.getElementById('mPrazoOriginal').textContent = formatDateOnly(prazoOriginalStr);
             document.getElementById('mApontamento').textContent = formatDateOnly(item.ultimo_apontamento);
             document.getElementById('mEntregaNorm').textContent = formatDateOnly(item.entrega_normalizada);
+
+            toggleEditPrazo(false); // Reseta o formulário de edição
 
             const modal = document.getElementById('osModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
 
+        function toggleEditPrazo(show) {
+            const box = document.getElementById('boxEditPrazo');
+            const btnOpen = document.getElementById('btnOpenEditPrazo');
+
+            if (show) {
+                box.classList.remove('hidden');
+                btnOpen.classList.add('hidden');
+                
+                // Pré-preenche o input de data com a data atual de prev_entrega_os
+                if (currentOSItem && currentOSItem.prev_entrega_os) {
+                    const d = new Date(currentOSItem.prev_entrega_os);
+                    if (!isNaN(d)) {
+                        document.getElementById('inputNovaData').value = d.toISOString().split('T')[0];
+                    }
+                }
+                document.getElementById('txtJustificativa').value = '';
+            } else {
+                box.classList.add('hidden');
+                btnOpen.classList.remove('hidden');
+            }
+        }
+
+        async function salvarNovaData() {
+            if (!currentOSItem) return;
+
+            const novaData = document.getElementById('inputNovaData').value;
+            const justificativa = document.getElementById('txtJustificativa').value.trim();
+
+            if (!novaData) {
+                alert('Por favor, selecione uma nova data.');
+                return;
+            }
+
+            if (!justificativa) {
+                alert('A justificativa é obrigatória para registrar a alteração no sistema.');
+                return;
+            }
+
+            const btn = document.getElementById('btnSalvarData');
+            btn.disabled = true;
+            btn.innerHTML = 'Salvando...';
+
+            try {
+                const response = await fetch(`${API_URL}/${currentOSItem.n_os}/alterar-prazo`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': '69420'
+                    },
+                    body: JSON.stringify({
+                        nova_data: novaData,
+                        justificativa: justificativa
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || 'Falha ao atualizar prazo.');
+                }
+
+                alert('Data de entrega alterada com sucesso!');
+                closeModal();
+                fetchData(); // Recarrega os dados do dashboard
+
+            } catch (err) {
+                console.error(err);
+                alert(`Erro: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> Salvar';
+                lucide.createIcons();
+            }
+        }
+
         function closeModal() {
             const modal = document.getElementById('osModal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            currentOSItem = null;
         }
     </script>
 </body>
