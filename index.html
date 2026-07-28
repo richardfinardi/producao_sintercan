@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
 <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V5.2</title>
+    <title>Programação Semanal de Produção Sintercan V5.3</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -46,7 +46,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.2</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.3</span></p>
                 </div>
             </div>
 
@@ -179,7 +179,7 @@
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
             <div class="flex items-center gap-2">
                 <i data-lucide="code-2" class="w-4 h-4 text-amber-500"></i>
-                <span>© 2026 Sistema de Gestão de Produção</span>
+                <span>© 2026 Sistema de Gestão de Produção V5.3</span>
             </div>
         </div>
     </footer>
@@ -204,6 +204,18 @@
                     <div class="col-span-2 border-t border-slate-800/80 pt-1.5 mt-0.5">
                         <span class="text-slate-400 block font-semibold">Nº do Orçamento</span>
                         <span id="mNumOrcamento" class="font-bold text-amber-400"></span>
+                    </div>
+                </div>
+
+                <!-- BLOCO NOVOS CAMPOS DE QUANTIDADE RESTANTE -->
+                <div class="grid grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                    <div>
+                        <span class="text-slate-400 block font-semibold">Qtd. Restante Orçamento</span>
+                        <span id="mQtdOrcamento" class="font-bold text-blue-400 text-sm">0</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block font-semibold">Qtd. Restante Estoque</span>
+                        <span id="mQtdEstoque" class="font-bold text-emerald-400 text-sm">0</span>
                     </div>
                 </div>
 
@@ -263,7 +275,7 @@
                 populateDropdowns();
                 renderCalendar();
             } catch (err) {
-                console.error("Erro ao buscar API do Ngrok:", err);
+                console.error("Erro ao buscar API:", err);
                 alert("Erro de conexão! Verifique se a API local e o Ngrok estão ativos.");
             } finally {
                 if(icon) icon.classList.remove('animate-spin');
@@ -384,26 +396,22 @@
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseValue(val));
         }
 
-        // Função de cálculo de semanas ajustada para fragmentar semanas que cruzam o mês
         function getSplitWeekDetails(itemDate) {
             const year = itemDate.getFullYear();
             const month = itemDate.getMonth();
 
-            // Cálculo do Número da Semana ISO
             const d = new Date(Date.UTC(year, month, itemDate.getDate()));
             const dayNum = d.getUTCDay() || 7;
             d.setUTCDate(d.getUTCDate() + 4 - dayNum);
             const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
             const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 
-            // Segunda e Domingo nominais da semana ISO
             const monday = new Date(itemDate);
             monday.setDate(itemDate.getDate() - (itemDate.getDay() === 0 ? 6 : itemDate.getDay() - 1));
             
             const sunday = new Date(monday);
             sunday.setDate(monday.getDate() + 6);
 
-            // Intervalo restrito ao mês da data do item
             const firstDayOfMonth = new Date(year, month, 1);
             const lastDayOfMonth = new Date(year, month + 1, 0);
 
@@ -595,6 +603,10 @@
             document.getElementById('mPossuiOrcamento').textContent = item.possui_orcamento || '-';
             
             document.getElementById('mNumOrcamento').textContent = item.orcamento || 'Não possui';
+
+            // Mapeamento dos novos campos de quantidade restante
+            document.getElementById('mQtdOrcamento').textContent = item.qtde_restante_orcamento ?? 0;
+            document.getElementById('mQtdEstoque').textContent = item.qtde_restante_estoque ?? 0;
 
             document.getElementById('mCompras').textContent = item.status_compras || '-';
             document.getElementById('mTerceiros').textContent = item.status_terceiros || '-';
