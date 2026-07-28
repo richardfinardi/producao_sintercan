@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
 <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V5.5</title>
+    <title>Programação Semanal de Produção Sintercan V5.6</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -46,7 +46,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.5</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.6</span></p>
                 </div>
             </div>
 
@@ -179,7 +179,7 @@
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
             <div class="flex items-center gap-2">
                 <i data-lucide="code-2" class="w-4 h-4 text-amber-500"></i>
-                <span>© 2026 Sistema de Gestão de Produção V5.5</span>
+                <span>© 2026 Sistema de Gestão de Produção V5.6</span>
             </div>
         </div>
     </footer>
@@ -416,7 +416,10 @@
 
         function parseValue(val) {
             if (val === null || val === undefined || val === '') return 0;
-            if (typeof val === 'number') return val;
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            
+            if (typeof val === 'string' && /[a-zA-Z]/.test(val) && !val.includes('R$')) return 0;
+
             let str = val.toString().replace(/[^\d,-]/g, '').replace(',', '.');
             return parseFloat(str) || 0;
         }
@@ -479,7 +482,7 @@
                 }
 
                 if (onlyWithBudget) {
-                    const hasBudget = (item.possui_orcamento && item.possui_orcamento.toLowerCase() === 'sim') || (parseValue(item.preco_geral_a_vista || item.orcamento) > 0);
+                    const hasBudget = (item.possui_orcamento && item.possui_orcamento.toLowerCase() === 'sim') || (parseValue(item.preco_geral_a_vista) > 0);
                     if (!hasBudget) return false;
                 }
 
@@ -501,7 +504,7 @@
 
             let totalVal = 0, atrasadasCount = 0, semOrcCount = 0;
             filtered.forEach(item => {
-                const val = parseValue(item.preco_geral_a_vista || item.orcamento);
+                const val = parseValue(item.preco_geral_a_vista);
                 totalVal += val;
                 if (item.atrasada === 'sim') atrasadasCount++;
                 if (item.possui_orcamento === 'não' || val === 0) semOrcCount++;
@@ -558,7 +561,7 @@
                     return timeA - timeB;
                 });
 
-                const weekTotal = week.items.reduce((acc, i) => acc + parseValue(i.preco_geral_a_vista || i.orcamento), 0);
+                const weekTotal = week.items.reduce((acc, i) => acc + parseValue(i.preco_geral_a_vista), 0);
                 
                 const col = document.createElement('div');
                 col.className = 'bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden flex flex-col shadow-sm';
@@ -584,7 +587,7 @@
 
         function renderItemCard(item) {
             const isAtrasada = item.atrasada === 'sim';
-            const val = parseValue(item.preco_geral_a_vista || item.orcamento);
+            const val = parseValue(item.preco_geral_a_vista);
             
             let valColor = 'bg-emerald-600 text-white';
             if (isAtrasada) valColor = 'bg-red-600 text-white font-bold';
@@ -644,7 +647,7 @@
             document.getElementById('mTitulo').textContent = getFullTitle(item);
             document.getElementById('mPedido').textContent = item.n_pedido || 'Não informado';
             document.getElementById('mCliente').textContent = item.cliente || 'Não informado';
-            document.getElementById('mPreco').textContent = formatBRL(item.preco_geral_a_vista || item.orcamento);
+            document.getElementById('mPreco').textContent = formatBRL(item.preco_geral_a_vista);
             document.getElementById('mPossuiOrcamento').textContent = item.possui_orcamento || '-';
             
             document.getElementById('mNumOrcamento').textContent = item.orcamento || 'Não possui';
