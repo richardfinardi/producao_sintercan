@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
 <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V5.7</title>
+    <title>Programação Semanal de Produção Sintercan V5.8</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -46,7 +46,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.7</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.8</span></p>
                 </div>
             </div>
 
@@ -179,7 +179,7 @@
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
             <div class="flex items-center gap-2">
                 <i data-lucide="code-2" class="w-4 h-4 text-amber-500"></i>
-                <span>© 2026 Sistema de Gestão de Produção V5.6</span>
+                <span>© 2026 Sistema de Gestão de Produção V5.8</span>
             </div>
         </div>
     </footer>
@@ -274,7 +274,7 @@
     <script>
         const API_URL = 'https://sintercan.consultoriarf.net/PRODUCAO';
         let rawData = [];
-        let currentOSItem = null; // Guarda a OS aberta no modal
+        let currentOSItem = null;
         
         let currentDate = new Date();
 
@@ -288,12 +288,14 @@
 
         async function fetchData() {
             const icon = document.getElementById('refreshIcon');
-            if(icon) icon.classList.add('animate-spin');
+            if (icon) icon.classList.add('animate-spin');
 
             try {
-                const response = await fetch(API_URL, {
+                // Adicionado Cache-Buster (?_t=Timestamp) para forçar o navegador a não usar cache velho
+                const response = await fetch(`${API_URL}?_t=${Date.now()}`, {
                     method: 'GET',
-                    headers: { 'ngrok-skip-browser-warning': '69420' }
+                    headers: { 'ngrok-skip-browser-warning': '69420' },
+                    cache: 'no-store'
                 });
 
                 if (!response.ok) throw new Error(`Status HTTP: ${response.status}`);
@@ -307,7 +309,7 @@
                 console.error("Erro ao buscar API:", err);
                 alert("Erro de conexão! Verifique se a API local e o Ngrok estão ativos.");
             } finally {
-                if(icon) icon.classList.remove('animate-spin');
+                if (icon) icon.classList.remove('animate-spin');
             }
         }
 
@@ -347,6 +349,11 @@
             const comprasSelect = document.getElementById('comprasFilter');
             const terceirosSelect = document.getElementById('terceirosFilter');
 
+            // Salva valores selecionados para não perder ao atualizar
+            const currentClient = clientSelect.value;
+            const currentCompras = comprasSelect.value;
+            const currentTerceiros = terceirosSelect.value;
+
             clientSelect.innerHTML = '<option value="" class="bg-slate-900">Todos os Clientes</option>';
             comprasSelect.innerHTML = '<option value="" class="bg-slate-900">Status Compras (Todos)</option>';
             terceirosSelect.innerHTML = '<option value="" class="bg-slate-900">Status Terceiros (Todos)</option>';
@@ -372,6 +379,11 @@
             Array.from(terceirosStatus).sort().forEach(val => {
                 terceirosSelect.appendChild(new Option(val, val, false, false)).className = 'bg-slate-900';
             });
+
+            // Restaura o filtro selecionado previamente
+            clientSelect.value = currentClient;
+            comprasSelect.value = currentCompras;
+            terceirosSelect.value = currentTerceiros;
         }
 
         function changeMonth(delta) {
@@ -481,7 +493,6 @@
                     }
                 }
 
-                // FILTRO CORRIGIDO: exige saldo restante do orçamento > 0 ou valor financeiro > 0
                 if (onlyWithBudget) {
                     const qtdOrc = parseValue(item.qtde_restante_orcamento);
                     const valGeral = parseValue(item.preco_geral_a_vista);
@@ -551,7 +562,6 @@
             }
 
             sortedWeeks.forEach(week => {
-                // Ordena as OSs da semana pelo Prazo Entrega Original (mais antiga primeiro)
                 week.items.sort((a, b) => {
                     const temOrcA = a.possui_orcamento && a.possui_orcamento.toLowerCase() === 'sim';
                     const temOrcB = b.possui_orcamento && b.possui_orcamento.toLowerCase() === 'sim';
@@ -673,7 +683,7 @@
             document.getElementById('mApontamento').textContent = formatDateOnly(item.ultimo_apontamento);
             document.getElementById('mEntregaNorm').textContent = formatDateOnly(item.entrega_normalizada);
 
-            toggleEditPrazo(false); // Reseta o formulário de edição
+            toggleEditPrazo(false);
 
             const modal = document.getElementById('osModal');
             modal.classList.remove('hidden');
@@ -688,7 +698,6 @@
                 box.classList.remove('hidden');
                 btnOpen.classList.add('hidden');
                 
-                // Pré-preenche o input de data com a data atual de prev_entrega_os
                 if (currentOSItem && currentOSItem.prev_entrega_os) {
                     const d = new Date(currentOSItem.prev_entrega_os);
                     if (!isNaN(d)) {
@@ -742,7 +751,7 @@
 
                 alert('Data de entrega alterada com sucesso!');
                 closeModal();
-                fetchData(); // Recarrega os dados do dashboard
+                fetchData();
 
             } catch (err) {
                 console.error(err);
