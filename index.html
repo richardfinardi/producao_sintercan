@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
 <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V5.6</title>
+    <title>Programação Semanal de Produção Sintercan V5.7</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -46,7 +46,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.6</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V5.7</span></p>
                 </div>
             </div>
 
@@ -481,9 +481,13 @@
                     }
                 }
 
+                // FILTRO CORRIGIDO: exige saldo restante do orçamento > 0 ou valor financeiro > 0
                 if (onlyWithBudget) {
-                    const hasBudget = (item.possui_orcamento && item.possui_orcamento.toLowerCase() === 'sim') || (parseValue(item.preco_geral_a_vista) > 0);
-                    if (!hasBudget) return false;
+                    const qtdOrc = parseValue(item.qtde_restante_orcamento);
+                    const valGeral = parseValue(item.preco_geral_a_vista);
+                    
+                    const hasBudgetToDeliver = qtdOrc > 0 || valGeral > 0;
+                    if (!hasBudgetToDeliver) return false;
                 }
 
                 if (selectedClient && item.cliente !== selectedClient) return false;
