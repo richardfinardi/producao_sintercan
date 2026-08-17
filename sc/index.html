@@ -3,108 +3,107 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Controle de Peças Sintercan v1</title>
+  <title>CONTROLE DE PEÇAS SINTERCAN</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <style>
-    /* Estilização fina de scrollbar e bordas para aproximar do Power BI */
-    table { border-collapse: separate; border-spacing: 0; }
-    th { border-bottom: 2px solid #0078d4; }
-    tr:nth-child(even) { background-color: #f9fafb; }
+    /* Estilização fiel do Power BI */
+    body { background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     .active-tab { background-color: #262626 !important; color: #ffffff !important; }
+    table { border-collapse: collapse; width: 100%; }
+    th { border-bottom: 2px solid #0078d4; color: #333; font-weight: 600; font-size: 11px; padding: 4px; text-align: left; }
+    td { font-size: 11px; padding: 4px; color: #1a1a1a; white-space: nowrap; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #edf2f7; }
+    .slicer-label { background-color: #000; color: #fff; font-size: 11px; font-weight: bold; padding: 2px 6px; }
   </style>
 </head>
-<body class="bg-gray-200 text-gray-800 min-h-screen flex flex-col p-3 font-sans">
+<body class="p-4 flex flex-col min-h-screen">
 
-  <!-- Container Principal estilo Folha de Power BI -->
-  <div class="bg-white rounded-sm shadow-md border border-gray-300 flex flex-col flex-grow p-4 max-w-[1600px] mx-auto w-full">
+  <div class="bg-white border border-gray-300 rounded shadow-md p-4 flex-grow flex flex-col max-w-[1600px] w-full mx-auto">
 
     <!-- Header -->
-    <header class="flex justify-between items-start mb-4 border-b pb-3">
-      <div class="flex items-center gap-3">
-        <div class="bg-amber-500 text-white p-2 rounded font-bold text-xl flex items-center justify-center w-10 h-10">
-          <i class="fa-solid fa-gear"></i>
-        </div>
+    <header class="flex justify-between items-center mb-3">
+      <div class="flex items-center gap-2">
+        <div class="bg-amber-500 text-white font-bold p-1 rounded text-lg">⚙</div>
         <div>
-          <h1 class="text-xs text-gray-500 font-bold uppercase tracking-wider">SinterCan</h1>
-          <p class="text-[10px] text-gray-400">Usinagem e Ferramentaria de Precisão</p>
+          <h1 class="text-xs font-bold uppercase text-gray-700 leading-none">SINTERCAN</h1>
+          <span class="text-[9px] text-gray-400 leading-none">Usinagem e Ferramentaria de Precisão</span>
         </div>
       </div>
 
-      <h2 class="text-2xl font-light text-gray-700 tracking-wide self-center uppercase">
-        Controle de Peças Sintercan v1
+      <h2 class="text-xl font-normal tracking-wide text-gray-800 uppercase">
+        CONTROLE DE PEÇAS SINTERCAN
       </h2>
 
-      <!-- Card Contador de Itens -->
-      <div class="border-2 border-gray-400 rounded bg-white px-8 py-1 text-center shadow-sm">
-        <span id="kpi-count" class="block text-3xl font-bold text-gray-800">0</span>
-        <span class="text-xs font-semibold text-gray-500 uppercase tracking-widest">ITENS</span>
+      <div class="border-2 border-gray-400 bg-white px-6 py-1 text-center min-w-[120px]">
+        <span id="kpi-count" class="block text-3xl font-bold text-gray-800 leading-none">0</span>
+        <span class="text-[10px] font-bold text-gray-500 tracking-widest uppercase">ITENS</span>
       </div>
     </header>
+
+    <!-- BOTOES DE NAVEGAÇÃO ENTRE ABAS (AGORA NO TOPO) -->
+    <nav class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+      <button data-tab="estoque" class="tab-btn active-tab border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
+        EM ESTOQUE
+      </button>
+      <button data-tab="orcamento" class="tab-btn border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
+        EM ESTOQUE PARA ORÇAMENTO
+      </button>
+      <button data-tab="produzindo" class="tab-btn border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
+        PRODUZINDO
+      </button>
+      <button data-tab="entregues" class="tab-btn border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
+        ENTREGUES
+      </button>
+      <button data-tab="parciais" class="tab-btn border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
+        PARCIAIS
+      </button>
+    </nav>
 
     <!-- Filtros de Topo (Slicers) -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
       <div>
-        <label class="block bg-black text-white text-xs font-bold px-2 py-0.5">OS Destino</label>
-        <select id="filter-os" class="w-full border border-gray-400 p-1 text-sm bg-white focus:outline-none">
+        <div class="slicer-label">OS Destino</div>
+        <select id="filter-os" class="w-full border border-gray-400 p-1 text-xs bg-white focus:outline-none">
           <option value="">Todos</option>
         </select>
       </div>
 
       <div>
-        <label class="block bg-black text-white text-xs font-bold px-2 py-0.5">Cód. Produto</label>
-        <select id="filter-cod-produto" class="w-full border border-gray-400 p-1 text-sm bg-white focus:outline-none">
+        <div class="slicer-label">Cód. Produto</div>
+        <select id="filter-cod-produto" class="w-full border border-gray-400 p-1 text-xs bg-white focus:outline-none">
           <option value="">Todos</option>
         </select>
       </div>
 
       <div>
-        <label class="block bg-black text-white text-xs font-bold px-2 py-0.5">Cliente</label>
-        <select id="filter-cliente" class="w-full border border-gray-400 p-1 text-sm bg-white focus:outline-none">
+        <div class="slicer-label">cliente</div>
+        <select id="filter-cliente" class="w-full border border-gray-400 p-1 text-xs bg-white focus:outline-none">
           <option value="">Todos</option>
         </select>
       </div>
 
-      <div id="wrapper-filter-os-prod">
-        <label class="block bg-black text-white text-xs font-bold px-2 py-0.5">OS Produzindo</label>
-        <select id="filter-os-prod" class="w-full border border-gray-400 p-1 text-sm bg-white focus:outline-none">
+      <!-- Filtro exclusivo para a aba Produzindo -->
+      <div id="container-os-prod" class="hidden">
+        <div class="slicer-label">OS produzindo</div>
+        <select id="filter-os-prod" class="w-full border border-gray-400 p-1 text-xs bg-white focus:outline-none">
           <option value="">Todos</option>
         </select>
       </div>
     </section>
 
     <!-- Tabela Principal -->
-    <main class="flex-grow overflow-auto border border-gray-300 rounded-sm mb-4 min-h-[400px]">
-      <table class="w-full text-left text-xs">
-        <thead class="bg-white sticky top-0 text-gray-700 font-semibold border-b">
-          <tr id="table-header">
-            <!-- Colunas dinâmicas -->
-          </tr>
+    <main class="flex-grow overflow-auto border border-gray-300 min-h-[420px]">
+      <table>
+        <thead class="bg-white sticky top-0">
+          <tr id="table-header"></tr>
         </thead>
-        <tbody id="table-body" class="divide-y divide-gray-200">
-          <!-- Linhas dinâmicas -->
-        </tbody>
+        <tbody id="table-body"></tbody>
+        <tfoot class="bg-white font-bold border-t-2 border-blue-500 sticky bottom-0">
+          <tr id="table-footer"></tr>
+        </tfoot>
       </table>
     </main>
-
-    <!-- Barra de Navegação Inferior (Abas) -->
-    <footer class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-gray-200">
-      <button data-tab="estoque" class="tab-btn active-tab border-2 border-gray-800 text-gray-800 font-bold py-2 rounded text-xs uppercase hover:bg-gray-100 transition">
-        Em Estoque
-      </button>
-      <button data-tab="orcamento" class="tab-btn border-2 border-gray-800 text-gray-800 font-bold py-2 rounded text-xs uppercase hover:bg-gray-100 transition">
-        Em Estoque para Orçamento
-      </button>
-      <button data-tab="produzindo" class="tab-btn border-2 border-gray-800 text-gray-800 font-bold py-2 rounded text-xs uppercase hover:bg-gray-100 transition">
-        Produzindo
-      </button>
-      <button data-tab="entregues" class="tab-btn border-2 border-gray-800 text-gray-800 font-bold py-2 rounded text-xs uppercase hover:bg-gray-100 transition">
-        Entregues
-      </button>
-      <button data-tab="parciais" class="tab-btn border-2 border-gray-800 text-gray-800 font-bold py-2 rounded text-xs uppercase hover:bg-gray-100 transition">
-        Parciais
-      </button>
-    </footer>
 
   </div>
 
@@ -113,170 +112,185 @@
     let rawData = [];
     let currentTab = 'estoque';
 
-    // Definição das colunas por Aba
-    const tabColumns = {
-      estoque: [
-        { label: 'OS Destino', key: 'n_os' },
-        { label: 'Item/Serviço', key: 'titulo' },
-        { label: 'Cod OS completo', key: 'cod_os_completo' },
-        { label: 'Cód. Produto', key: 'codigo_interno' },
-        { label: 'Peça', key: 'nome' },
-        { label: 'Disponivel', key: 'qtde_disponivel', align: 'right' },
-        { label: 'Orcamento', key: 'n_orcamento', align: 'right' },
-        { label: 'Cliente', key: 'cliente' }
-      ],
-      orcamento: [
-        { label: 'Orçamento', key: 'n_orcamento' },
-        { label: 'Cliente', key: 'cliente' },
-        { label: 'Cód. Produto', key: 'codigo_interno' },
-        { label: 'Item', key: 'nome' },
-        { label: 'Qtde. Reservada', key: 'qtde_reservada', align: 'right' }
-      ],
-      produzindo: [
-        { label: 'OS Destino', key: 'n_os' },
-        { label: 'Item/Serviço', key: 'titulo' },
-        { label: 'Cod OS completo', key: 'cod_os_completo' },
-        { label: 'Cód. Produto', key: 'codigo_interno' },
-        { label: 'Peça', key: 'nome' },
-        { label: 'OS produzindo', key: 'cod_solicitacao' },
-        { label: 'Qtde', key: 'qtde_produzindo', align: 'right' },
-        { label: 'Orcamentos', key: 'n_orcamento', align: 'right' }
-      ],
-      entregues: [
-        { label: 'OS Destino', key: 'n_os' },
-        { label: 'Item/Serviço', key: 'titulo' },
-        { label: 'Cod OS completo', key: 'cod_os_completo' },
-        { label: 'Cód. Produto', key: 'codigo_interno' },
-        { label: 'Peça', key: 'nome' },
-        { label: 'OS produzindo', key: 'cod_solicitacao' },
-        { label: 'n_orcamento', key: 'n_orcamento' },
-        { label: 'Cliente', key: 'cliente' }
-      ],
-      parciais: [
-        { label: 'OS Destino', key: 'n_os' },
-        { label: 'Item/Serviço', key: 'titulo' },
-        { label: 'Cod OS completo', key: 'cod_os_completo' },
-        { label: 'Cód. Produto', key: 'codigo_interno' },
-        { label: 'Peça', key: 'nome' },
-        { label: 'Situação', key: 'entregue' },
-        { label: 'Solicitado', key: 'qtde_solicitada', align: 'right' },
-        { label: 'Entregue', key: 'qtde_entregue', align: 'right' },
-        { label: 'Disponivel', key: 'qtde_disponivel', align: 'right' },
-        { label: 'Produzindo', key: 'qtde_produzindo', align: 'right' }
-      ]
+    // Estrutura exata das colunas por tela do Power BI
+    const tabConfigs = {
+      estoque: {
+        cols: [
+          { label: 'OS Destino', key: 'n_os' },
+          { label: 'Item/Serviço', key: 'titulo' },
+          { label: 'Cod OS completo', key: 'cod_os_completo' },
+          { label: 'Cód. Produto:', key: 'codigo_interno' },
+          { label: 'Peça', key: 'nome' },
+          { label: 'Disponivel', key: 'qtde_disponivel', align: 'right', sum: true },
+          { label: 'n_orcamento', key: 'n_orcamento', align: 'right' },
+          { label: 'cliente', key: 'cliente' }
+        ],
+        filter: item => item.qtde_disponivel > 0 || (item.entregue && item.entregue.toLowerCase() === 'disponivel')
+      },
+      orcamento: {
+        cols: [
+          { label: 'Orçamento', key: 'n_orcamento' },
+          { label: 'Cliente', key: 'cliente' },
+          { label: 'Cód. Produto', key: 'codigo_interno' },
+          { label: 'Item', key: 'nome' },
+          { label: 'Qtde. Reservada', key: 'qtde_reservada', align: 'right', sum: true }
+        ],
+        filter: item => item.n_orcamento !== null && item.n_orcamento !== ''
+      },
+      produzindo: {
+        cols: [
+          { label: 'OS Destino', key: 'n_os' },
+          { label: 'Item/Serviço', key: 'titulo' },
+          { label: 'Cod OS completo', key: 'cod_os_completo' },
+          { label: 'Cód. Produto:', key: 'codigo_interno' },
+          { label: 'Peça', key: 'nome' },
+          { label: 'OS produzindo', key: 'cod_solicitacao' },
+          { label: 'Qtde', key: 'qtde_produzindo', align: 'right', sum: true },
+          { label: 'n_orcamento', key: 'n_orcamento', align: 'right' },
+          { label: 'cliente', key: 'cliente' }
+        ],
+        filter: item => Number(item.qtde_produzindo) > 0
+      },
+      entregues: {
+        cols: [
+          { label: 'OS Destino', key: 'n_os' },
+          { label: 'Item/Serviço', key: 'titulo' },
+          { label: 'Cod OS completo', key: 'cod_os_completo' },
+          { label: 'Cód. Produto:', key: 'codigo_interno' },
+          { label: 'Peça', key: 'nome' },
+          { label: 'OS produzindo', key: 'cod_solicitacao' },
+          { label: 'n_orcamento', key: 'n_orcamento' },
+          { label: 'cliente', key: 'cliente' }
+        ],
+        filter: item => item.entregue && item.entregue.toLowerCase().includes('total')
+      },
+      parciais: {
+        cols: [
+          { label: 'OS Destino', key: 'n_os' },
+          { label: 'Item/Serviço', key: 'titulo' },
+          { label: 'Cod OS completo', key: 'cod_os_completo' },
+          { label: 'Cód. Produto:', key: 'codigo_interno' },
+          { label: 'Peça', key: 'nome' },
+          { label: 'Situação', key: 'entregue' },
+          { label: 'Solicitado', key: 'qtde_solicitada', align: 'right', sum: true },
+          { label: 'Entregue', key: 'qtde_entregue', align: 'right', sum: true },
+          { label: 'Disponivel', key: 'qtde_disponivel', align: 'right', sum: true },
+          { label: 'Produzindo', key: 'qtde_produzindo', align: 'right', sum: true },
+          { label: 'OS produzindo', key: 'cod_solicitacao' },
+          { label: 'Orçamento', key: 'n_orcamento' },
+          { label: 'cliente', key: 'cliente' }
+        ],
+        filter: item => item.entregue && item.entregue.toLowerCase().includes('parcial')
+      }
     };
 
-    async function loadData() {
+    async function fetchData() {
       try {
-        const res = await fetch(API_URL);
-        rawData = await res.json();
+        const response = await fetch(API_URL);
+        rawData = await response.json();
         populateFilters();
-        renderView();
+        render();
       } catch (err) {
-        console.error("Erro ao carregar os dados:", err);
+        console.error('Erro ao carregar os dados:', err);
       }
     }
 
-    function filterDataByTab(data) {
-      // Regras de filtragem com base no campo "entregue" ou regras de estoque
-      return data.filter(item => {
-        if (currentTab === 'estoque') return (item.qtde_disponivel > 0);
-        if (currentTab === 'orcamento') return item.n_orcamento !== null;
-        if (currentTab === 'produzindo') return (item.qtde_produzindo > 0);
-        if (currentTab === 'entregues') return (item.entregue && item.entregue.toLowerCase().includes('total'));
-        if (currentTab === 'parciais') return (item.entregue && item.entregue.toLowerCase().includes('parcial'));
-        return true;
-      });
+    function populateFilters() {
+      const setOptions = (id, key) => {
+        const select = document.getElementById(id);
+        const values = [...new Set(rawData.map(i => i[key]).filter(Boolean))].sort();
+        select.innerHTML = '<option value="">Todos</option>';
+        values.forEach(val => {
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = val;
+          select.appendChild(opt);
+        });
+      };
+
+      setOptions('filter-os', 'n_os');
+      setOptions('filter-cod-produto', 'codigo_interno');
+      setOptions('filter-cliente', 'cliente');
+      setOptions('filter-os-prod', 'cod_solicitacao');
     }
 
-    function applyUserFilters(data) {
+    function render() {
+      const config = tabConfigs[currentTab];
+      
+      // Controle do quarto filtro (OS Produzindo)
+      const osProdContainer = document.getElementById('container-os-prod');
+      if (currentTab === 'produzindo' || currentTab === 'parciais') {
+        osProdContainer.classList.remove('hidden');
+      } else {
+        osProdContainer.classList.add('hidden');
+      }
+
+      // 1. Filtragem por Aba
+      let filtered = rawData.filter(config.filter);
+
+      // 2. Filtragem por Filtros Ativos
       const osVal = document.getElementById('filter-os').value;
       const prodVal = document.getElementById('filter-cod-produto').value;
       const cliVal = document.getElementById('filter-cliente').value;
       const osProdVal = document.getElementById('filter-os-prod').value;
 
-      return data.filter(item => {
-        return (!osVal || String(item.n_os) === osVal) &&
-               (!prodVal || item.codigo_interno === prodVal) &&
-               (!cliVal || item.cliente === cliVal) &&
-               (!osProdVal || String(item.cod_solicitacao) === osProdVal);
-      });
-    }
+      if (osVal) filtered = filtered.filter(i => String(i.n_os) === osVal);
+      if (prodVal) filtered = filtered.filter(i => i.codigo_interno === prodVal);
+      if (cliVal) filtered = filtered.filter(i => i.cliente === cliVal);
+      if (osProdVal && !osProdContainer.classList.contains('hidden')) {
+        filtered = filtered.filter(i => String(i.cod_solicitacao) === osProdVal);
+      }
 
-    function renderView() {
-      const filteredByTab = filterDataByTab(rawData);
-      const finalData = applyUserFilters(filteredByTab);
+      // Atualiza KPI Total de Itens (Contagem de linhas exata do Power BI)
+      document.getElementById('kpi-count').textContent = filtered.length;
 
-      // Atualiza contador de Itens
-      document.getElementById('kpi-count').innerText = finalData.length;
-
-      // Renderiza Cabeçalho da Tabela
+      // Renderiza Cabeçalho
       const theadTr = document.getElementById('table-header');
-      theadTr.innerHTML = '';
-      const cols = tabColumns[currentTab];
+      theadTr.innerHTML = config.cols.map(col => `
+        <th class="${col.align === 'right' ? 'text-right' : 'text-left'}">${col.label}</th>
+      `).join('');
 
-      cols.forEach(col => {
-        const th = document.createElement('th');
-        th.className = `p-2 ${col.align === 'right' ? 'text-right' : 'text-left'}`;
-        th.innerText = col.label;
-        theadTr.appendChild(th);
-      });
-
-      // Renderiza Linhas da Tabela
+      // Renderiza Linhas
       const tbody = document.getElementById('table-body');
-      tbody.innerHTML = '';
+      tbody.innerHTML = filtered.map(row => `
+        <tr>
+          ${config.cols.map(col => `
+            <td class="${col.align === 'right' ? 'text-right' : 'text-left'}">
+              ${row[col.key] !== null && row[col.key] !== undefined ? row[col.key] : ''}
+            </td>
+          `).join('')}
+        </tr>
+      `).join('');
 
-      finalData.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-blue-50 transition border-b border-gray-100';
-
-        cols.forEach(col => {
-          const td = document.createElement('td');
-          td.className = `p-2 ${col.align === 'right' ? 'text-right' : 'text-left'}`;
-          td.innerText = row[col.key] !== null && row[col.key] !== undefined ? row[col.key] : '';
-          tr.appendChild(td);
-        });
-
-        tbody.appendChild(tr);
-      });
+      // Renderiza Rodapé com os Totais Solicitados/Disponíveis/Produzindo
+      const tfootTr = document.getElementById('table-footer');
+      tfootTr.innerHTML = config.cols.map((col, idx) => {
+        if (idx === 0) return `<td>Total</td>`;
+        if (col.sum) {
+          const sum = filtered.reduce((acc, curr) => acc + (Number(curr[col.key]) || 0), 0);
+          return `<td class="text-right">${sum}</td>`;
+        }
+        return `<td></td>`;
+      }).join('');
     }
 
-    function populateFilters() {
-      const fillSelect = (id, key) => {
-        const select = document.getElementById(id);
-        const uniqueVals = [...new Set(rawData.map(item => item[key]).filter(Boolean))].sort();
-        select.innerHTML = '<option value="">Todos</option>';
-        uniqueVals.forEach(val => {
-          const opt = document.createElement('option');
-          opt.value = val;
-          opt.innerText = val;
-          select.appendChild(opt);
-        });
-      };
-
-      fillSelect('filter-os', 'n_os');
-      fillSelect('filter-cod-produto', 'codigo_interno');
-      fillSelect('filter-cliente', 'cliente');
-      fillSelect('filter-os-prod', 'cod_solicitacao');
-    }
-
-    // Eventos dos botões de Aba
+    // Eventos de troca de abas
     document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
         btn.classList.add('active-tab');
         currentTab = btn.getAttribute('data-tab');
-        renderView();
+        render();
       });
     });
 
-    // Eventos dos Selects/Filtros
+    // Eventos dos filtros
     ['filter-os', 'filter-cod-produto', 'filter-cliente', 'filter-os-prod'].forEach(id => {
-      document.getElementById(id).addEventListener('change', renderView);
+      document.getElementById(id).addEventListener('change', render);
     });
 
-    // Inicialização
-    loadData();
+    // Início
+    fetchData();
   </script>
 </body>
 </html>
