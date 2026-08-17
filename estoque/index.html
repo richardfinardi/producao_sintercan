@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Estoque - Sintercan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+
+    <!-- HEADER -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 shadow-inner">
+                    <img src="../logo.png" alt="Logo" class="h-10 max-h-12 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="hidden p-2 bg-amber-500 rounded-xl text-slate-950 font-bold items-center justify-center">
+                        <i data-lucide="boxes" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
+                    <p class="text-xs text-slate-400">Controle de Estoque & Materiais</p>
+                </div>
+            </div>
+
+            <!-- Botões NAVEGAÇÃO / REFRESH -->
+            <div class="flex items-center gap-3">
+                <a href="../" class="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    Produção
+                </a>
+                <button id="btnRefresh" onclick="fetchEstoque()" class="flex items-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs transition shadow">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
+                    Atualizar Dados
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto p-4 flex flex-col gap-4 flex-1">
+        
+        <!-- BARRA DE PESQUISA -->
+        <div class="bg-slate-900 p-3 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-2 flex-1 min-w-[200px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                <input type="text" id="searchInput" oninput="renderTable()" placeholder="Pesquisar por Nº OS, Código Completo, Item ou Título..." 
+                       class="w-full text-xs bg-transparent text-white focus:outline-none placeholder-slate-500">
+            </div>
+        </div>
+
+        <!-- NAVEGAÇÃO POR ABAS -->
+        <div class="flex border-b border-slate-800 gap-2 overflow-x-auto custom-scroll">
+            <button id="tabRetirar" onclick="switchTab('retirar')" class="px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-amber-500 bg-slate-900 text-amber-400 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="package-check" class="w-4 h-4"></i>
+                Pronto para Retirar
+                <span id="badgeRetirar" class="ml-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            </button>
+            
+            <button id="tabRetirado" onclick="switchTab('retirado')" class="px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="package-minus" class="w-4 h-4"></i>
+                O que Retirou (Já Retirada)
+                <span id="badgeRetirado" class="ml-1 bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            </button>
+
+            <button id="tabChegar" onclick="switchTab('chegar')" class="px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="truck" class="w-4 h-4"></i>
+                Tem para Chegar (Falta Chegar)
+                <span id="badgeChegar" class="ml-1 bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            </button>
+        </div>
+
+        <!-- TABELA DE ITENS -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-950 text-slate-400 uppercase font-bold border-b border-slate-800 text-[10px]">
+                        <tr>
+                            <th class="p-3">OS / Cód. Completo</th>
+                            <th class="p-3">Título / Subtítulo</th>
+                            <th class="p-3">Item / Cód. Interno</th>
+                            <th class="p-3 text-center">Qtd. Solicitada</th>
+                            <th class="p-3 text-center">Qtd. Necessária</th>
+                            <th class="p-3 text-center" id="thQtdAba">Qtd. Pronto Retirar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-800/60">
+                        <!-- Conteúdo via Javascript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="emptyMessage" class="hidden p-8 text-center text-slate-500">
+                <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
+                Nenhum item com quantidade cadastrada nesta aba.
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_ESTOQUE = 'https://sintercan.consultoriarf.net/estoque';
+        let stockData = [];
+        let activeTab = 'retirar'; // 'retirar' | 'retirado' | 'chegar'
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            fetchEstoque();
+        });
+
+        async function fetchEstoque() {
+            const icon = document.getElementById('refreshIcon');
+            if (icon) icon.classList.add('animate-spin');
+
+            try {
+                const response = await fetch(`${API_ESTOQUE}?_t=${Date.now()}`, {
+                    method: 'GET',
+                    headers: { 'ngrok-skip-browser-warning': '69420' },
+                    cache: 'no-store'
+                });
+
+                if (!response.ok) throw new Error(`HTTP Status: ${response.status}`);
+
+                const data = await response.json();
+                stockData = Array.isArray(data) ? data : [data];
+                
+                updateBadges();
+                renderTable();
+            } catch (err) {
+                console.error("Erro ao carregar estoque:", err);
+                alert("Não foi possível conectar com a API de estoque.");
+            } finally {
+                if (icon) icon.classList.remove('animate-spin');
+            }
+        }
+
+        function updateBadges() {
+            const countRetirar = stockData.filter(i => Number(i.qtde_pronto_retirar) > 0).length;
+            const countRetirado = stockData.filter(i => Number(i.qtde_ja_retirada) > 0).length;
+            const countChegar = stockData.filter(i => Number(i.qtde_falta_chegar) > 0).length;
+
+            document.getElementById('badgeRetirar').textContent = countRetirar;
+            document.getElementById('badgeRetirado').textContent = countRetirado;
+            document.getElementById('badgeChegar').textContent = countChegar;
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            
+            const tabs = {
+                retirar: { el: document.getElementById('tabRetirar'), title: 'Qtd. Pronto Retirar', color: 'border-amber-500 text-amber-400' },
+                retirado: { el: document.getElementById('tabRetirado'), title: 'Qtd. Já Retirada', color: 'border-emerald-500 text-emerald-400' },
+                chegar: { el: document.getElementById('tabChegar'), title: 'Qtd. Falta Chegar', color: 'border-blue-500 text-blue-400' }
+            };
+
+            Object.keys(tabs).forEach(key => {
+                const isSelected = key === tab;
+                const t = tabs[key];
+                if (isSelected) {
+                    t.el.className = `px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 bg-slate-900 ${t.color} flex items-center gap-2 whitespace-nowrap`;
+                } else {
+                    t.el.className = 'px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap';
+                }
+            });
+
+            document.getElementById('thQtdAba').textContent = tabs[tab].title;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const emptyMsg = document.getElementById('emptyMessage');
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            tbody.innerHTML = '';
+
+            const filtered = stockData.filter(item => {
+                let validTab = false;
+                if (activeTab === 'retirar' && Number(item.qtde_pronto_retirar) > 0) validTab = true;
+                if (activeTab === 'retirado' && Number(item.qtde_ja_retirada) > 0) validTab = true;
+                if (activeTab === 'chegar' && Number(item.qtde_falta_chegar) > 0) validTab = true;
+
+                if (!validTab) return false;
+
+                if (search) {
+                    const fullText = `${item.n_os} ${item.cod_os_completo} ${item.titulo} ${item.codigo_interno} ${item.item}`.toLowerCase();
+                    if (!fullText.includes(search)) return false;
+                }
+
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
+
+            emptyMsg.classList.add('hidden');
+
+            filtered.forEach(item => {
+                let targetQty = 0;
+                let badgeClass = 'bg-slate-800 text-slate-200';
+
+                if (activeTab === 'retirar') {
+                    targetQty = item.qtde_pronto_retirar;
+                    badgeClass = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+                } else if (activeTab === 'retirado') {
+                    targetQty = item.qtde_ja_retirada;
+                    badgeClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                } else if (activeTab === 'chegar') {
+                    targetQty = item.qtde_falta_chegar;
+                    badgeClass = 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition';
+                tr.innerHTML = `
+                    <td class="p-3">
+                        <span class="font-bold text-amber-400 block">OS #${item.n_os || '-'}</span>
+                        <span class="text-[10px] text-slate-500 font-mono">${item.cod_os_completo || '-'}</span>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-semibold text-slate-200">${item.titulo || '-'}</div>
+                        <div class="text-[10px] text-slate-400">${item.subtitulo || ''}</div>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-medium text-slate-300">${item.item || '-'}</div>
+                        <span class="text-[10px] bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-slate-400 font-mono">
+                            Cód: ${item.codigo_interno || '-'}
+                        </span>
+                    </td>
+                    <td class="p-3 text-center font-bold text-slate-400">${item.qtde_solicitada ?? 0} ${item.unidade || ''}</td>
+                    <td class="p-3 text-center font-bold text-slate-400">${item.qtde_necessaria ?? 0} ${item.unidade || ''}</td>
+                    <td class="p-3 text-center">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${badgeClass}">
+                            ${targetQty} ${item.unidade || ''}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
