@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
 <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V6.3</title>
+    <title>Programação Semanal de Produção Sintercan V6.4</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -46,7 +46,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.3</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.4</span></p>
                 </div>
             </div>
 
@@ -142,6 +142,11 @@
 
             <!-- BOTÕES DE FILTRO SEPARADOS -->
             <div class="flex items-center gap-2">
+                <button id="btnToggleSort" onclick="toggleSortMode()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5" title="Alternar ordenação entre Data e Cliente">
+                    <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-blue-400"></i>
+                    <span id="txtToggleSort">Ord: Data</span>
+                </button>
+
                 <button id="btnToggleMonth" onclick="toggleMonthFilter()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
                     <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-amber-400"></i>
                     <span id="txtToggleMonth">Apenas Mês Selecionado</span>
@@ -179,7 +184,7 @@
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
             <div class="flex items-center gap-2">
                 <i data-lucide="code-2" class="w-4 h-4 text-amber-500"></i>
-                <span>© 2026 Sistema de Gestão de Produção V6.3</span>
+                <span>© 2026 Sistema de Gestão de Produção V6.4</span>
             </div>
         </div>
     </footer>
@@ -280,6 +285,7 @@
 
         let onlyCurrentMonth = true;
         let onlyWithBudget = true;
+        let sortMode = 'date'; // 'date' ou 'client'
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -291,7 +297,6 @@
             if (icon) icon.classList.add('animate-spin');
 
             try {
-                // Adicionado Cache-Buster (?_t=Timestamp) para forçar o navegador a não usar cache velho
                 const response = await fetch(`${API_URL}?_t=${Date.now()}`, {
                     method: 'GET',
                     headers: { 'ngrok-skip-browser-warning': '69420' },
@@ -303,7 +308,6 @@
                 const data = await response.json();
                 const baseList = Array.isArray(data) ? data : [data];
                 
-                // LÓGICA DE DESMEMBRAMENTO, PROPORCIONALIZAÇÃO E PROTEÇÃO DE DATAS PASSADAS
                 const expandedData = [];
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -316,6 +320,9 @@
                         const totalQtdOrcamento = matches.reduce((acc, m) => acc + parseValue(m[3]), 0) || parseValue(item.qtde_restante_orcamento) || 1;
                         const totalPrecoOS = parseValue(item.preco_geral_a_vista);
 
+                        // Agrupa sub-orçamentos que compartilham a MESMA DATA DE ENTREGA na mesma OS
+                        const groupedByDate = {};
+
                         matches.forEach(match => {
                             const subOrcTexto = match[1].trim();
                             const dataStr = match[2];
@@ -327,23 +334,35 @@
                             const dtOrc = new Date(year, parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
                             const isoDate = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T00:00:00`;
 
-                            // Proporcionaliza o preço individual com base na quantidade
-                            const precoProporcional = totalPrecoOS * (qtd / totalQtdOrcamento);
-
-                            // TRATAMENTO PARA DATAS VENCIDAS (PASSADAS):
-                            // Se a data da entrega do orçamento já passou, não deixa abrir coluna em mês/semana passada;
-                            // redireciona para a entrega_normalizada oficial da OS (ou data atual) mantendo como 'Atrasado'.
                             let dataFinalExibicao = isoDate;
                             if (dtOrc < today) {
                                 dataFinalExibicao = item.entrega_normalizada || today.toISOString();
                             }
 
+                            const key = `${dataFinalExibicao}`;
+
+                            if (!groupedByDate[key]) {
+                                groupedByDate[key] = {
+                                    subOrcTexts: [],
+                                    isoDate: isoDate,
+                                    dataFinalExibicao: dataFinalExibicao,
+                                    totalQtd: 0
+                                };
+                            }
+
+                            groupedByDate[key].subOrcTexts.push(subOrcTexto);
+                            groupedByDate[key].totalQtd += qtd;
+                        });
+
+                        Object.values(groupedByDate).forEach(group => {
+                            const precoProporcional = totalPrecoOS * (group.totalQtd / totalQtdOrcamento);
+
                             expandedData.push({
                                 ...item,
-                                orcamento: subOrcTexto,
-                                prev_entrega_orcamento: isoDate,
-                                entrega_normalizada: dataFinalExibicao,
-                                qtde_restante_orcamento: qtd,
+                                orcamento: group.subOrcTexts.join(', '),
+                                prev_entrega_orcamento: group.isoDate,
+                                entrega_normalizada: group.dataFinalExibicao,
+                                qtde_restante_orcamento: group.totalQtd,
                                 preco_geral_a_vista: precoProporcional
                             });
                         });
@@ -375,6 +394,19 @@
             }
         }
 
+        function toggleSortMode() {
+            if (sortMode === 'date') {
+                sortMode = 'client';
+                document.getElementById('txtToggleSort').textContent = "Ord: Cliente";
+                document.getElementById('btnToggleSort').className = "px-3 py-2 bg-blue-500 hover:bg-blue-400 text-slate-950 border border-blue-600 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm";
+            } else {
+                sortMode = 'date';
+                document.getElementById('txtToggleSort').textContent = "Ord: Data";
+                document.getElementById('btnToggleSort').className = "px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5";
+            }
+            renderCalendar();
+        }
+
         function clearAllFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('clientFilter').value = '';
@@ -383,6 +415,10 @@
 
             onlyCurrentMonth = true;
             onlyWithBudget = true;
+            sortMode = 'date';
+
+            document.getElementById('txtToggleSort').textContent = "Ord: Data";
+            document.getElementById('btnToggleSort').className = "px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5";
 
             document.getElementById('txtToggleMonth').textContent = "Apenas Mês Selecionado";
             document.getElementById('btnToggleMonth').className = "px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5";
@@ -549,7 +585,8 @@
                 const date = new Date(item.entrega_normalizada);
                 if (isNaN(date)) return false;
 
-                if (onlyCurrentMonth) {
+                // Se houver pesquisa por texto, IGNORA o filtro de mês e busca em TODO o banco
+                if (!search && onlyCurrentMonth) {
                     if (date.getMonth() !== currentDate.getMonth() || date.getFullYear() !== currentDate.getFullYear()) {
                         return false;
                     }
@@ -625,6 +662,13 @@
 
             sortedWeeks.forEach(week => {
                 week.items.sort((a, b) => {
+                    if (sortMode === 'client') {
+                        const clientA = (a.cliente || '').toLowerCase();
+                        const clientB = (b.cliente || '').toLowerCase();
+                        const comp = clientA.localeCompare(clientB);
+                        if (comp !== 0) return comp;
+                    }
+
                     const temOrcA = a.possui_orcamento && a.possui_orcamento.toLowerCase() === 'sim';
                     const temOrcB = b.possui_orcamento && b.possui_orcamento.toLowerCase() === 'sim';
 
@@ -709,7 +753,10 @@
                     </div>
 
                     <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-900">
-                        <span class="truncate max-w-[110px]" title="${item.cliente || 'Sem cliente'}">${item.cliente || 'Sem cliente'}</span>
+                        <div class="flex items-center gap-1.5 truncate max-w-[150px]">
+                            <span class="truncate font-medium text-slate-400" title="${item.cliente || 'Sem cliente'}">${item.cliente || 'Sem cliente'}</span>
+                            ${item.prev_entrega_orcamento ? `<span class="text-[9px] bg-slate-900 text-slate-400 px-1 py-0.2 rounded border border-slate-800/80" title="Prazo Orig. Orçamento">Orig: ${formatDateOnly(item.prev_entrega_orcamento)}</span>` : ''}
+                        </div>
                         <span class="${isAtrasada ? 'text-red-400 font-bold' : 'text-slate-400'}">${isAtrasada ? 'Atrasado' : 'No prazo'}</span>
                     </div>
                 </div>
