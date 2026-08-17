@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
 <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V6.1</title>
+    <title>Programação Semanal de Produção Sintercan V6.3</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -46,7 +46,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.1</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.3</span></p>
                 </div>
             </div>
 
@@ -179,7 +179,7 @@
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
             <div class="flex items-center gap-2">
                 <i data-lucide="code-2" class="w-4 h-4 text-amber-500"></i>
-                <span>© 2026 Sistema de Gestão de Produção V6.1</span>
+                <span>© 2026 Sistema de Gestão de Produção V6.3</span>
             </div>
         </div>
     </footer>
@@ -303,15 +303,19 @@
                 const data = await response.json();
                 const baseList = Array.isArray(data) ? data : [data];
                 
-                // LÓGICA DE DESMEMBRAMENTO DE ORÇAMENTOS POR DATA/QUANTIDADE
+                // LÓGICA DE DESMEMBRAMENTO, PROPORCIONALIZAÇÃO E PROTEÇÃO DE DATAS PASSADAS
                 const expandedData = [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
 
                 baseList.forEach(item => {
-                    // Captura orçamentos/entregas no formato "ORÇ: ... DD/MM/YY (QTD)"
                     const regex = /(ORÇ:[^,]+?(\d{2}\/\d{2}\/\d{2,4})\s*\(([\d\.]+)\))/gi;
                     const matches = [...(item.orcamento || '').matchAll(regex)];
 
                     if (matches.length > 1) {
+                        const totalQtdOrcamento = matches.reduce((acc, m) => acc + parseValue(m[3]), 0) || parseValue(item.qtde_restante_orcamento) || 1;
+                        const totalPrecoOS = parseValue(item.preco_geral_a_vista);
+
                         matches.forEach(match => {
                             const subOrcTexto = match[1].trim();
                             const dataStr = match[2];
@@ -320,18 +324,42 @@
                             const parts = dataStr.split('/');
                             let year = parts[2];
                             if (year.length === 2) year = '20' + year;
+                            const dtOrc = new Date(year, parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
                             const isoDate = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T00:00:00`;
+
+                            // Proporcionaliza o preço individual com base na quantidade
+                            const precoProporcional = totalPrecoOS * (qtd / totalQtdOrcamento);
+
+                            // TRATAMENTO PARA DATAS VENCIDAS (PASSADAS):
+                            // Se a data da entrega do orçamento já passou, não deixa abrir coluna em mês/semana passada;
+                            // redireciona para a entrega_normalizada oficial da OS (ou data atual) mantendo como 'Atrasado'.
+                            let dataFinalExibicao = isoDate;
+                            if (dtOrc < today) {
+                                dataFinalExibicao = item.entrega_normalizada || today.toISOString();
+                            }
 
                             expandedData.push({
                                 ...item,
                                 orcamento: subOrcTexto,
                                 prev_entrega_orcamento: isoDate,
-                                entrega_normalizada: isoDate,
-                                qtde_restante_orcamento: qtd
+                                entrega_normalizada: dataFinalExibicao,
+                                qtde_restante_orcamento: qtd,
+                                preco_geral_a_vista: precoProporcional
                             });
                         });
                     } else {
-                        expandedData.push(item);
+                        let dataFinalExibicao = item.entrega_normalizada;
+                        if (item.prev_entrega_orcamento) {
+                            const dtOrc = new Date(item.prev_entrega_orcamento);
+                            if (dtOrc < today) {
+                                dataFinalExibicao = item.entrega_normalizada || today.toISOString();
+                            }
+                        }
+
+                        expandedData.push({
+                            ...item,
+                            entrega_normalizada: dataFinalExibicao
+                        });
                     }
                 });
 
