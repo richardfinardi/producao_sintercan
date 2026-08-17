@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
 <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V6.0</title>
+    <title>Programação Semanal de Produção Sintercan V6.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -46,7 +46,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.0</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.1</span></p>
                 </div>
             </div>
 
@@ -179,7 +179,7 @@
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
             <div class="flex items-center gap-2">
                 <i data-lucide="code-2" class="w-4 h-4 text-amber-500"></i>
-                <span>© 2026 Sistema de Gestão de Produção V5.8</span>
+                <span>© 2026 Sistema de Gestão de Produção V6.1</span>
             </div>
         </div>
     </footer>
@@ -301,7 +301,41 @@
                 if (!response.ok) throw new Error(`Status HTTP: ${response.status}`);
                 
                 const data = await response.json();
-                rawData = Array.isArray(data) ? data : [data];
+                const baseList = Array.isArray(data) ? data : [data];
+                
+                // LÓGICA DE DESMEMBRAMENTO DE ORÇAMENTOS POR DATA/QUANTIDADE
+                const expandedData = [];
+
+                baseList.forEach(item => {
+                    // Captura orçamentos/entregas no formato "ORÇ: ... DD/MM/YY (QTD)"
+                    const regex = /(ORÇ:[^,]+?(\d{2}\/\d{2}\/\d{2,4})\s*\(([\d\.]+)\))/gi;
+                    const matches = [...(item.orcamento || '').matchAll(regex)];
+
+                    if (matches.length > 1) {
+                        matches.forEach(match => {
+                            const subOrcTexto = match[1].trim();
+                            const dataStr = match[2];
+                            const qtd = parseValue(match[3]);
+
+                            const parts = dataStr.split('/');
+                            let year = parts[2];
+                            if (year.length === 2) year = '20' + year;
+                            const isoDate = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T00:00:00`;
+
+                            expandedData.push({
+                                ...item,
+                                orcamento: subOrcTexto,
+                                prev_entrega_orcamento: isoDate,
+                                entrega_normalizada: isoDate,
+                                qtde_restante_orcamento: qtd
+                            });
+                        });
+                    } else {
+                        expandedData.push(item);
+                    }
+                });
+
+                rawData = expandedData;
                 
                 populateDropdowns();
                 renderCalendar();
