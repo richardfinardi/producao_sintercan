@@ -6,7 +6,6 @@
   <title>CONTROLE DE PEÇAS SINTERCAN</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Estilização fiel do Power BI */
     body { background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     .active-tab { background-color: #262626 !important; color: #ffffff !important; }
     table { border-collapse: collapse; width: 100%; }
@@ -41,7 +40,7 @@
       </div>
     </header>
 
-    <!-- BOTOES DE NAVEGAÇÃO ENTRE ABAS (AGORA NO TOPO) -->
+    <!-- NAVEGAÇÃO ENTRE ABAS (TOPO) -->
     <nav class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
       <button data-tab="estoque" class="tab-btn active-tab border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
         EM ESTOQUE
@@ -83,7 +82,6 @@
         </select>
       </div>
 
-      <!-- Filtro exclusivo para a aba Produzindo -->
       <div id="container-os-prod" class="hidden">
         <div class="slicer-label">OS produzindo</div>
         <select id="filter-os-prod" class="w-full border border-gray-400 p-1 text-xs bg-white focus:outline-none">
@@ -112,7 +110,7 @@
     let rawData = [];
     let currentTab = 'estoque';
 
-    // Estrutura exata das colunas por tela do Power BI
+    // Regras de Colunas + Filtros por Abas
     const tabConfigs = {
       estoque: {
         cols: [
@@ -125,7 +123,7 @@
           { label: 'n_orcamento', key: 'n_orcamento', align: 'right' },
           { label: 'cliente', key: 'cliente' }
         ],
-        filter: item => item.qtde_disponivel > 0 || (item.entregue && item.entregue.toLowerCase() === 'disponivel')
+        filter: item => Number(item.qtde_disponivel) > 0
       },
       orcamento: {
         cols: [
@@ -135,7 +133,7 @@
           { label: 'Item', key: 'nome' },
           { label: 'Qtde. Reservada', key: 'qtde_reservada', align: 'right', sum: true }
         ],
-        filter: item => item.n_orcamento !== null && item.n_orcamento !== ''
+        filter: item => item.n_orcamento !== null && item.n_orcamento !== "" && Number(item.qtde_reservada) > 0
       },
       produzindo: {
         cols: [
@@ -162,7 +160,7 @@
           { label: 'n_orcamento', key: 'n_orcamento' },
           { label: 'cliente', key: 'cliente' }
         ],
-        filter: item => item.entregue && item.entregue.toLowerCase().includes('total')
+        filter: item => item.entregue && String(item.entregue).toLowerCase().includes('total')
       },
       parciais: {
         cols: [
@@ -180,7 +178,7 @@
           { label: 'Orçamento', key: 'n_orcamento' },
           { label: 'cliente', key: 'cliente' }
         ],
-        filter: item => item.entregue && item.entregue.toLowerCase().includes('parcial')
+        filter: item => item.entregue && String(item.entregue).toLowerCase().includes('parcial')
       }
     };
 
@@ -191,16 +189,16 @@
         populateFilters();
         render();
       } catch (err) {
-        console.error('Erro ao carregar os dados:', err);
+        console.error('Erro ao buscar dados:', err);
       }
     }
 
     function populateFilters() {
-      const setOptions = (id, key) => {
+      const fillSelect = (id, key) => {
         const select = document.getElementById(id);
-        const values = [...new Set(rawData.map(i => i[key]).filter(Boolean))].sort();
+        const uniqueValues = [...new Set(rawData.map(i => i[key]).filter(v => v !== null && v !== ''))].sort();
         select.innerHTML = '<option value="">Todos</option>';
-        values.forEach(val => {
+        uniqueValues.forEach(val => {
           const opt = document.createElement('option');
           opt.value = val;
           opt.textContent = val;
@@ -208,16 +206,29 @@
         });
       };
 
-      setOptions('filter-os', 'n_os');
-      setOptions('filter-cod-produto', 'codigo_interno');
-      setOptions('filter-cliente', 'cliente');
-      setOptions('filter-os-prod', 'cod_solicitacao');
+      fillSelect('filter-os', 'n_os');
+      fillSelect('filter-cod-produto', 'codigo_interno');
+      fillSelect('filter-cliente', 'cliente');
+      fillSelect('filter-os-prod', 'cod_solicitacao');
+    }
+
+    // Remove duplicatas que surgem do JOIN da API mantendo o comportamento de agregação da tabela do Power BI
+    function deduplicateData(data, tab) {
+      if (tab === 'produzindo' || tab === 'entregues') {
+        const seen = new Set();
+        return data.filter(item => {
+          const key = `${item.n_os}-${item.cod_os_completo}-${item.codigo_interno}-${item.cod_solicitacao}-${item.n_orcamento}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+      return data;
     }
 
     function render() {
       const config = tabConfigs[currentTab];
       
-      // Controle do quarto filtro (OS Produzindo)
       const osProdContainer = document.getElementById('container-os-prod');
       if (currentTab === 'produzindo' || currentTab === 'parciais') {
         osProdContainer.classList.remove('hidden');
@@ -225,10 +236,13 @@
         osProdContainer.classList.add('hidden');
       }
 
-      // 1. Filtragem por Aba
+      // 1. Filtragem Contextual da Aba
       let filtered = rawData.filter(config.filter);
 
-      // 2. Filtragem por Filtros Ativos
+      // 2. Desduplicação idêntica ao contexto visual do Power BI
+      filtered = deduplicateData(filtered, currentTab);
+
+      // 3. Aplicação dos Slicers do Usuário
       const osVal = document.getElementById('filter-os').value;
       const prodVal = document.getElementById('filter-cod-produto').value;
       const cliVal = document.getElementById('filter-cliente').value;
@@ -241,18 +255,16 @@
         filtered = filtered.filter(i => String(i.cod_solicitacao) === osProdVal);
       }
 
-      // Atualiza KPI Total de Itens (Contagem de linhas exata do Power BI)
+      // Atualiza Total de ITENS (Contagem de Linhas Exata)
       document.getElementById('kpi-count').textContent = filtered.length;
 
-      // Renderiza Cabeçalho
-      const theadTr = document.getElementById('table-header');
-      theadTr.innerHTML = config.cols.map(col => `
+      // Header
+      document.getElementById('table-header').innerHTML = config.cols.map(col => `
         <th class="${col.align === 'right' ? 'text-right' : 'text-left'}">${col.label}</th>
       `).join('');
 
-      // Renderiza Linhas
-      const tbody = document.getElementById('table-body');
-      tbody.innerHTML = filtered.map(row => `
+      // Body
+      document.getElementById('table-body').innerHTML = filtered.map(row => `
         <tr>
           ${config.cols.map(col => `
             <td class="${col.align === 'right' ? 'text-right' : 'text-left'}">
@@ -262,19 +274,18 @@
         </tr>
       `).join('');
 
-      // Renderiza Rodapé com os Totais Solicitados/Disponíveis/Produzindo
-      const tfootTr = document.getElementById('table-footer');
-      tfootTr.innerHTML = config.cols.map((col, idx) => {
+      // Footer (Soma das Colunas de Quantidade)
+      document.getElementById('table-footer').innerHTML = config.cols.map((col, idx) => {
         if (idx === 0) return `<td>Total</td>`;
         if (col.sum) {
           const sum = filtered.reduce((acc, curr) => acc + (Number(curr[col.key]) || 0), 0);
-          return `<td class="text-right">${sum}</td>`;
+          return `<td class="text-right">${sum.toLocaleString('pt-BR')}</td>`;
         }
         return `<td></td>`;
       }).join('');
     }
 
-    // Eventos de troca de abas
+    // Abas
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
@@ -284,12 +295,11 @@
       });
     });
 
-    // Eventos dos filtros
+    // Filtros
     ['filter-os', 'filter-cod-produto', 'filter-cliente', 'filter-os-prod'].forEach(id => {
       document.getElementById(id).addEventListener('change', render);
     });
 
-    // Início
     fetchData();
   </script>
 </body>
