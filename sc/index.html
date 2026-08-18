@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sintercan - Controle de Estoque</title>
+  <title>Sintercan - Controle de Estoque V1</title>
   
   <!-- Favicon EXCLUSIVO no navegador -->
   <link rel="icon" type="image/png" href="../LOGO MINIMALISTA.png" />
@@ -44,24 +44,17 @@
   <header class="bg-rf-header border-b border-rf sticky top-0 z-50 shadow-md">
     <div class="max-w-[1700px] mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-4">
       
-      <!-- LOGO CONSULTORIA RF + TÍTULO DA PÁGINA (SEM ÍCONE EXTRA) -->
       <div class="flex items-center gap-4">
-        <!-- Logo Principal Consultoria RF -->
         <img src="../logo.png" alt="Consultoria RF" class="h-10 w-auto object-contain" />
-
         <div class="h-8 w-[1px] bg-slate-800 hidden sm:block"></div>
-
-        <!-- Título Limpo -->
         <div>
-          <h1 class="text-sm font-black tracking-wider text-white uppercase leading-tight">
-            Sintercan
-          </h1>
-          <p class="text-[10px] text-slate-400 font-medium leading-tight">Controle de Estoque & Materiais</p>
+          <h1 class="text-sm font-black tracking-wider text-white uppercase leading-tight">Sintercan</h1>
+          <p class="text-[10px] text-slate-400 font-medium leading-tight">Controle de Estoque & Materiais V1</p>
         </div>
       </div>
 
       <div class="flex items-center gap-3">
-        <button id="btnRefresh" onclick="fetchData()" class="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs transition shadow-lg shadow-amber-500/10">
+        <button id="btnRefresh" onclick="fetchAllData()" class="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs transition shadow-lg shadow-amber-500/10">
           <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
           Atualizar Dados
         </button>
@@ -114,7 +107,7 @@
                class="w-full text-xs bg-transparent text-white focus:outline-none placeholder-slate-500">
       </div>
 
-      <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[160px]">
+      <div id="wrapperFilterOs" class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[160px]">
         <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
         <select id="filterOs" onchange="render()" class="w-full text-xs bg-transparent text-white focus:outline-none cursor-pointer">
           <option value="" class="bg-slate-900">OS Destino (Todas)</option>
@@ -189,12 +182,26 @@
   </main>
 
   <script>
-    const API_URL = 'https://sintercan.consultoriarf.net/estoque_sc';
-    let rawData = [];
+    const API_ESTOQUE = 'https://sintercan.consultoriarf.net/estoque_sc';
+    const API_ORCAMENTO = 'https://sintercan.consultoriarf.net/estoque_sc_orc';
+
+    let rawDataEstoque = [];
+    let rawDataOrcamento = [];
     let currentTab = 'estoque';
 
     let sortColumn = 'cod_os_completo';
     let sortDirection = 'asc';
+
+    // Formatação de data estilo Power BI (DD/MM/YY)
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = String(d.getFullYear()).slice(-2);
+      return `${day}/${month}/${year}`;
+    }
 
     const tabConfigs = {
       estoque: {
@@ -208,7 +215,9 @@
           { label: 'n_orcamento', key: 'n_orcamento', align: 'right' },
           { label: 'cliente', key: 'cliente' }
         ],
-        filter: item => Number(item.qtde_disponivel) > 0
+        source: () => rawDataEstoque,
+        filter: item => Number(item.qtde_disponivel) > 0,
+        defaultSort: 'cod_os_completo'
       },
       orcamento: {
         cols: [
@@ -216,9 +225,13 @@
           { label: 'Cliente', key: 'cliente' },
           { label: 'Cód. Produto', key: 'codigo_interno' },
           { label: 'Item', key: 'nome' },
-          { label: 'Qtde. Reservada', key: 'qtde_reservada', align: 'right', sum: true }
+          { label: 'Qtde. Reservada', key: 'qtde_reservada', align: 'right', sum: true },
+          { label: 'Pre. de entrega', key: 'dt_previsao_entrega', formatter: formatDate },
+          { label: 'dt_aprovacao', key: 'dt_aprovacao', formatter: formatDate }
         ],
-        filter: item => item.n_orcamento !== null && item.n_orcamento !== "" && Number(item.qtde_reservada) > 0
+        source: () => rawDataOrcamento,
+        filter: item => true,
+        defaultSort: 'dt_previsao_entrega'
       },
       produzindo: {
         cols: [
@@ -232,7 +245,9 @@
           { label: 'n_orcamento', key: 'n_orcamento', align: 'right' },
           { label: 'cliente', key: 'cliente' }
         ],
-        filter: item => Number(item.qtde_produzindo) > 0
+        source: () => rawDataEstoque,
+        filter: item => Number(item.qtde_produzindo) > 0,
+        defaultSort: 'cod_os_completo'
       },
       entregues: {
         cols: [
@@ -245,7 +260,9 @@
           { label: 'n_orcamento', key: 'n_orcamento' },
           { label: 'cliente', key: 'cliente' }
         ],
-        filter: item => item.entregue && String(item.entregue).toLowerCase().includes('total')
+        source: () => rawDataEstoque,
+        filter: item => item.entregue && String(item.entregue).toLowerCase().includes('total'),
+        defaultSort: 'cod_os_completo'
       },
       parciais: {
         cols: [
@@ -263,22 +280,30 @@
           { label: 'Orçamento', key: 'n_orcamento' },
           { label: 'cliente', key: 'cliente' }
         ],
-        filter: item => item.entregue && String(item.entregue).toLowerCase().includes('parcial')
+        source: () => rawDataEstoque,
+        filter: item => item.entregue && String(item.entregue).toLowerCase().includes('parcial'),
+        defaultSort: 'cod_os_completo'
       }
     };
 
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
-      fetchData();
+      fetchAllData();
     });
 
-    async function fetchData() {
+    async function fetchAllData() {
       const icon = document.getElementById('refreshIcon');
       if (icon) icon.classList.add('animate-spin');
 
       try {
-        const res = await fetch(`${API_URL}?_t=${Date.now()}`);
-        rawData = await res.json();
+        const [resEstoque, resOrcamento] = await Promise.all([
+          fetch(`${API_ESTOQUE}?_t=${Date.now()}`),
+          fetch(`${API_ORCAMENTO}?_t=${Date.now()}`)
+        ]);
+
+        rawDataEstoque = await resEstoque.json();
+        rawDataOrcamento = await resOrcamento.json();
+
         populateDropdowns();
         render();
       } catch (err) {
@@ -289,9 +314,11 @@
     }
 
     function populateDropdowns() {
+      const combined = [...rawDataEstoque, ...rawDataOrcamento];
+
       const fill = (id, key) => {
         const el = document.getElementById(id);
-        const vals = [...new Set(rawData.map(i => i[key]).filter(Boolean))].sort();
+        const vals = [...new Set(combined.map(i => i[key]).filter(Boolean))].sort();
         const firstOpt = el.options[0].text;
         el.innerHTML = `<option value="" class="bg-slate-900">${firstOpt}</option>`;
         vals.forEach(v => el.innerHTML += `<option value="${v}" class="bg-slate-900">${v}</option>`);
@@ -312,6 +339,17 @@
       const activeBtn = document.getElementById(`tab-${tab}`);
       if (activeBtn) activeBtn.classList.add('tab-active');
 
+      // Oculta filtro de OS na aba de orçamentos
+      const wrapperOs = document.getElementById('wrapperFilterOs');
+      if (tab === 'orcamento') {
+        wrapperOs.classList.add('hidden');
+      } else {
+        wrapperOs.classList.remove('hidden');
+      }
+
+      sortColumn = tabConfigs[tab].defaultSort;
+      sortDirection = 'asc';
+
       render();
     }
 
@@ -327,7 +365,8 @@
 
     function render() {
       const config = tabConfigs[currentTab];
-      let filtered = rawData.filter(config.filter);
+      const sourceData = config.source();
+      let filtered = sourceData.filter(config.filter);
 
       const search = document.getElementById('searchInput').value.toLowerCase().trim();
       const osVal = document.getElementById('filterOs').value;
@@ -341,14 +380,16 @@
           (i.codigo_interno && String(i.codigo_interno).toLowerCase().includes(search)) ||
           (i.nome && String(i.nome).toLowerCase().includes(search)) ||
           (i.titulo && String(i.titulo).toLowerCase().includes(search)) ||
-          (i.cliente && String(i.cliente).toLowerCase().includes(search))
+          (i.cliente && String(i.cliente).toLowerCase().includes(search)) ||
+          (i.n_orcamento && String(i.n_orcamento).toLowerCase().includes(search))
         );
       }
 
-      if (osVal) filtered = filtered.filter(i => String(i.n_os) === osVal);
+      if (osVal && currentTab !== 'orcamento') filtered = filtered.filter(i => String(i.n_os) === osVal);
       if (prodVal) filtered = filtered.filter(i => i.codigo_interno === prodVal);
       if (cliVal) filtered = filtered.filter(i => i.cliente === cliVal);
 
+      // Ordenação Dinâmica
       filtered.sort((a, b) => {
         let valA = a[sortColumn] ?? '';
         let valB = b[sortColumn] ?? '';
@@ -365,12 +406,14 @@
         return 0;
       });
 
+      // KPIs
       document.getElementById('kpiTotalItens').textContent = filtered.length;
       document.getElementById('kpiQtdSolicitada').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_solicitada) || 0), 0);
       document.getElementById('kpiQtdDisponivel').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_disponivel) || 0), 0);
       document.getElementById('kpiQtdProduzindo').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_produzindo) || 0), 0);
       document.getElementById('totalCount').textContent = filtered.length;
 
+      // Header
       document.getElementById('tableHeader').innerHTML = config.cols.map(c => {
         const isSorted = sortColumn === c.key;
         const icon = isSorted ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : '';
@@ -383,16 +426,23 @@
         `;
       }).join('');
 
+      // Body
       document.getElementById('tableBody').innerHTML = filtered.map(row => `
         <tr>
-          ${config.cols.map(c => `
-            <td class="${c.align === 'right' ? 'text-right font-mono text-amber-400' : 'text-left'}">
-              ${row[c.key] !== null && row[c.key] !== undefined ? row[c.key] : ''}
-            </td>
-          `).join('')}
+          ${config.cols.map(c => {
+            let val = row[c.key] !== null && row[c.key] !== undefined ? row[c.key] : '';
+            if (c.formatter) val = c.formatter(val);
+
+            return `
+              <td class="${c.align === 'right' ? 'text-right font-mono text-amber-400' : 'text-left'}">
+                ${val}
+              </td>
+            `;
+          }).join('')}
         </tr>
       `).join('');
 
+      // Footer
       const sumsContainer = document.getElementById('footerSums');
       sumsContainer.innerHTML = '';
       config.cols.filter(c => c.sum).forEach(c => {
@@ -408,7 +458,7 @@
       document.getElementById('filterOs').value = '';
       document.getElementById('filterProduto').value = '';
       document.getElementById('filterCliente').value = '';
-      sortColumn = 'cod_os_completo';
+      sortColumn = tabConfigs[currentTab].defaultSort;
       sortDirection = 'asc';
       render();
     }
