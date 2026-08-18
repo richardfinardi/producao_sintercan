@@ -1,306 +1,356 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CONTROLE DE PEÇAS SINTERCAN</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    .active-tab { background-color: #262626 !important; color: #ffffff !important; }
-    table { border-collapse: collapse; width: 100%; }
-    th { border-bottom: 2px solid #0078d4; color: #333; font-weight: 600; font-size: 11px; padding: 4px; text-align: left; }
-    td { font-size: 11px; padding: 4px; color: #1a1a1a; white-space: nowrap; }
-    tr:nth-child(even) { background-color: #f9f9f9; }
-    tr:hover { background-color: #edf2f7; }
-    .slicer-label { background-color: #000; color: #fff; font-size: 11px; font-weight: bold; padding: 2px 6px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Semanal de Produção - Sintercan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Cores Padrão Consultoria RF */
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #070d1e; color: #f8fafc; }
+        .bg-rf-card { background-color: #0f172a; }
+        .bg-rf-header { background-color: #0b1329; }
+        .border-rf { border-color: #1e293b; }
+        
+        .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #0b1329; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        
+        .active-tab {
+            background-color: #f59e0b !important;
+            color: #070d1e !important;
+            font-weight: 800 !important;
+        }
+    </style>
 </head>
-<body class="p-4 flex flex-col min-h-screen">
+<body class="min-h-screen flex flex-col custom-scroll text-slate-100">
 
-  <div class="bg-white border border-gray-300 rounded shadow-md p-4 flex-grow flex flex-col max-w-[1600px] w-full mx-auto">
+    <!-- HEADER PRINCIPAL -->
+    <header class="bg-rf-header border-b border-rf sticky top-0 z-50 shadow-lg">
+        <div class="max-w-[1700px] mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center p-1 bg-slate-900/90 rounded-xl border border-slate-800 shadow-inner">
+                    <div class="p-2 bg-amber-500 rounded-lg text-slate-950 font-black flex items-center justify-center">
+                        <i data-lucide="cog" class="w-6 h-6 animate-spin-slow"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black tracking-wider text-white uppercase flex items-center gap-2">
+                        CONSULTORIA RF <span class="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-mono">v6.5</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium">Sintercan - Controle Estratégico de Estoque & Peças</p>
+                </div>
+            </div>
 
-    <!-- Header -->
-    <header class="flex justify-between items-center mb-3">
-      <div class="flex items-center gap-2">
-        <div class="bg-amber-500 text-white font-bold p-1 rounded text-lg">⚙</div>
-        <div>
-          <h1 class="text-xs font-bold uppercase text-gray-700 leading-none">SINTERCAN</h1>
-          <span class="text-[9px] text-gray-400 leading-none">Usinagem e Ferramentaria de Precisão</span>
+            <!-- Botão Atualizar -->
+            <div class="flex items-center gap-3">
+                <button id="btnRefresh" onclick="fetchData()" class="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs transition shadow-lg shadow-amber-500/10">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
+                    Atualizar Dados
+                </button>
+            </div>
         </div>
-      </div>
-
-      <h2 class="text-xl font-normal tracking-wide text-gray-800 uppercase">
-        CONTROLE DE PEÇAS SINTERCAN
-      </h2>
-
-      <div class="border-2 border-gray-400 bg-white px-6 py-1 text-center min-w-[120px]">
-        <span id="kpi-count" class="block text-3xl font-bold text-gray-800 leading-none">0</span>
-        <span class="text-[10px] font-bold text-gray-500 tracking-widest uppercase">ITENS</span>
-      </div>
     </header>
 
-    <!-- NAVEGAÇÃO ENTRE ABAS (TOPO) -->
-    <nav class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
-      <button data-tab="estoque" class="tab-btn active-tab border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
-        EM ESTOQUE
-      </button>
-      <button data-tab="orcamento" class="tab-btn border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
-        EM ESTOQUE PARA ORÇAMENTO
-      </button>
-      <button data-tab="produzindo" class="tab-btn border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
-        PRODUZINDO
-      </button>
-      <button data-tab="entregues" class="tab-btn border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
-        ENTREGUES
-      </button>
-      <button data-tab="parciais" class="tab-btn border border-gray-800 text-gray-800 font-bold py-1.5 rounded text-xs uppercase transition">
-        PARCIAIS
-      </button>
-    </nav>
+    <main class="max-w-[1700px] w-full mx-auto p-4 flex flex-col gap-4 flex-1">
+        
+        <!-- CARDS INDICADORES (TOP KPIS) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-rf-card p-4 rounded-2xl border border-rf shadow-md flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">TOTAL DE ITENS (FILTRADO)</p>
+                    <h3 id="kpiTotalItens" class="text-3xl font-black text-white mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i data-lucide="boxes" class="w-6 h-6"></i></div>
+            </div>
 
-    <!-- Filtros de Topo (Slicers) -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-      <div>
-        <div class="slicer-label">OS Destino</div>
-        <select id="filter-os" class="w-full border border-gray-400 p-1 text-xs bg-white focus:outline-none">
-          <option value="">Todos</option>
-        </select>
-      </div>
+            <div class="bg-rf-card p-4 rounded-2xl border border-rf shadow-md flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">QUANTIDADE SOLICITADA</p>
+                    <h3 id="kpiQtdSolicitada" class="text-3xl font-black text-amber-400 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20"><i data-lucide="clipboard-list" class="w-6 h-6"></i></div>
+            </div>
 
-      <div>
-        <div class="slicer-label">Cód. Produto</div>
-        <select id="filter-cod-produto" class="w-full border border-gray-400 p-1 text-xs bg-white focus:outline-none">
-          <option value="">Todos</option>
-        </select>
-      </div>
+            <div class="bg-rf-card p-4 rounded-2xl border border-rf shadow-md flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">QUANTIDADE DISPONÍVEL</p>
+                    <h3 id="kpiQtdDisponivel" class="text-3xl font-black text-emerald-400 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20"><i data-lucide="check-circle-2" class="w-6 h-6"></i></div>
+            </div>
 
-      <div>
-        <div class="slicer-label">cliente</div>
-        <select id="filter-cliente" class="w-full border border-gray-400 p-1 text-xs bg-white focus:outline-none">
-          <option value="">Todos</option>
-        </select>
-      </div>
+            <div class="bg-rf-card p-4 rounded-2xl border border-rf shadow-md flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">EM PRODUÇÃO</p>
+                    <h3 id="kpiQtdProduzindo" class="text-3xl font-black text-indigo-400 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20"><i data-lucide="factory" class="w-6 h-6"></i></div>
+            </div>
+        </div>
 
-      <div id="container-os-prod" class="hidden">
-        <div class="slicer-label">OS produzindo</div>
-        <select id="filter-os-prod" class="w-full border border-gray-400 p-1 text-xs bg-white focus:outline-none">
-          <option value="">Todos</option>
-        </select>
-      </div>
-    </section>
+        <!-- BARRA DE FILTROS AVANÇADOS -->
+        <div class="bg-rf-card p-4 rounded-2xl border border-rf flex flex-wrap items-center gap-3 shadow-md">
+            
+            <!-- Busca Geral -->
+            <div class="flex items-center gap-2 flex-1 min-w-[280px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Pesquisar qualquer coisa (OS, Pedido, SC, Título, Cliente...)" 
+                       class="w-full text-xs bg-transparent text-white focus:outline-none placeholder-slate-500">
+            </div>
 
-    <!-- Tabela Principal -->
-    <main class="flex-grow overflow-auto border border-gray-300 min-h-[420px]">
-      <table>
-        <thead class="bg-white sticky top-0">
-          <tr id="table-header"></tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-        <tfoot class="bg-white font-bold border-t-2 border-blue-500 sticky bottom-0">
-          <tr id="table-footer"></tr>
-        </tfoot>
-      </table>
+            <!-- Filtro de Cliente -->
+            <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[200px]">
+                <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+                <select id="filterCliente" onchange="applyFilters()" class="w-full text-xs bg-transparent text-white focus:outline-none cursor-pointer">
+                    <option value="" class="bg-slate-900">Todos os Clientes</option>
+                </select>
+            </div>
+
+            <!-- Filtro de Código do Produto -->
+            <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[180px]">
+                <i data-lucide="tag" class="w-4 h-4 text-slate-400"></i>
+                <select id="filterProduto" onchange="applyFilters()" class="w-full text-xs bg-transparent text-white focus:outline-none cursor-pointer">
+                    <option value="" class="bg-slate-900">Todos os Produtos</option>
+                </select>
+            </div>
+
+            <!-- Botão Limpar Filtros -->
+            <button onclick="resetFilters()" class="flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-bold text-xs transition">
+                <i data-lucide="filter-x" class="w-4 h-4"></i>
+                Limpar Filtros
+            </button>
+        </div>
+
+        <!-- NAVEGAÇÃO POR ABAS (SUPERIOR DA TABELA) -->
+        <div class="flex border-b border-rf gap-2 overflow-x-auto custom-scroll pt-2">
+            <button id="tab-estoque" onclick="switchTab('estoque')" class="tab-btn px-5 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-amber-500 bg-rf-card text-amber-400 flex items-center gap-2 whitespace-nowrap active-tab">
+                <i data-lucide="box" class="w-4 h-4"></i>
+                EM ESTOQUE
+                <span id="badge-estoque" class="ml-1 bg-slate-950/60 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            </button>
+            
+            <button id="tab-orcamento" onclick="switchTab('orcamento')" class="tab-btn px-5 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                EM ESTOQUE PARA ORÇAMENTO
+                <span id="badge-orcamento" class="ml-1 bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            </button>
+
+            <button id="tab-produzindo" onclick="switchTab('produzindo')" class="tab-btn px-5 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="hammer" class="w-4 h-4"></i>
+                PRODUZINDO
+                <span id="badge-produzindo" class="ml-1 bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            </button>
+
+            <button id="tab-entregues" onclick="switchTab('entregues')" class="tab-btn px-5 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="check-check" class="w-4 h-4"></i>
+                ENTREGUES
+                <span id="badge-entregues" class="ml-1 bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            </button>
+
+            <button id="tab-parciais" onclick="switchTab('parciais')" class="tab-btn px-5 py-2.5 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="pie-chart" class="w-4 h-4"></i>
+                PARCIAIS
+                <span id="badge-parciais" class="ml-1 bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            </button>
+        </div>
+
+        <!-- TABELA PRINCIPAL DE DADOS -->
+        <div class="bg-rf-card rounded-2xl border border-rf overflow-hidden shadow-md flex-1 flex flex-col">
+            <div class="overflow-x-auto custom-scroll flex-1">
+                <table class="w-full text-left text-xs text-slate-300 border-collapse">
+                    <thead class="bg-slate-950 text-slate-400 uppercase font-extrabold border-b border-rf text-[10px] sticky top-0">
+                        <tr id="tableHeader">
+                            <!-- Colunas Dinâmicas via JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-800/60 font-medium">
+                        <!-- Conteúdo da Tabela -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mensagem Sem Registros -->
+            <div id="emptyMessage" class="hidden p-12 text-center text-slate-500">
+                <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 opacity-30"></i>
+                Nenhum registro encontrado para os filtros selecionados.
+            </div>
+
+            <!-- Rodapé da Tabela com Totais -->
+            <div class="bg-slate-950 p-3 border-t border-rf flex justify-between items-center text-xs font-bold text-slate-300">
+                <span>TOTAL DE REGISTROS: <strong id="totalRegistros" class="text-amber-400">0</strong></span>
+                <span id="sumRodape" class="font-mono text-emerald-400"></span>
+            </div>
+        </div>
     </main>
 
-  </div>
+    <script>
+        const API_URL = 'https://sintercan.consultoriarf.net/estoque_sc';
+        let rawData = [];
+        let filteredData = [];
+        let activeTab = 'estoque';
 
-  <script>
-    const API_URL = 'https://sintercan.consultoriarf.net/estoque_sc';
-    let rawData = [];
-    let currentTab = 'estoque';
-
-    // Regras de Colunas + Filtros por Abas
-    const tabConfigs = {
-      estoque: {
-        cols: [
-          { label: 'OS Destino', key: 'n_os' },
-          { label: 'Item/Serviço', key: 'titulo' },
-          { label: 'Cod OS completo', key: 'cod_os_completo' },
-          { label: 'Cód. Produto:', key: 'codigo_interno' },
-          { label: 'Peça', key: 'nome' },
-          { label: 'Disponivel', key: 'qtde_disponivel', align: 'right', sum: true },
-          { label: 'n_orcamento', key: 'n_orcamento', align: 'right' },
-          { label: 'cliente', key: 'cliente' }
-        ],
-        filter: item => Number(item.qtde_disponivel) > 0
-      },
-      orcamento: {
-        cols: [
-          { label: 'Orçamento', key: 'n_orcamento' },
-          { label: 'Cliente', key: 'cliente' },
-          { label: 'Cód. Produto', key: 'codigo_interno' },
-          { label: 'Item', key: 'nome' },
-          { label: 'Qtde. Reservada', key: 'qtde_reservada', align: 'right', sum: true }
-        ],
-        filter: item => item.n_orcamento !== null && item.n_orcamento !== "" && Number(item.qtde_reservada) > 0
-      },
-      produzindo: {
-        cols: [
-          { label: 'OS Destino', key: 'n_os' },
-          { label: 'Item/Serviço', key: 'titulo' },
-          { label: 'Cod OS completo', key: 'cod_os_completo' },
-          { label: 'Cód. Produto:', key: 'codigo_interno' },
-          { label: 'Peça', key: 'nome' },
-          { label: 'OS produzindo', key: 'cod_solicitacao' },
-          { label: 'Qtde', key: 'qtde_produzindo', align: 'right', sum: true },
-          { label: 'n_orcamento', key: 'n_orcamento', align: 'right' },
-          { label: 'cliente', key: 'cliente' }
-        ],
-        filter: item => Number(item.qtde_produzindo) > 0
-      },
-      entregues: {
-        cols: [
-          { label: 'OS Destino', key: 'n_os' },
-          { label: 'Item/Serviço', key: 'titulo' },
-          { label: 'Cod OS completo', key: 'cod_os_completo' },
-          { label: 'Cód. Produto:', key: 'codigo_interno' },
-          { label: 'Peça', key: 'nome' },
-          { label: 'OS produzindo', key: 'cod_solicitacao' },
-          { label: 'n_orcamento', key: 'n_orcamento' },
-          { label: 'cliente', key: 'cliente' }
-        ],
-        filter: item => item.entregue && String(item.entregue).toLowerCase().includes('total')
-      },
-      parciais: {
-        cols: [
-          { label: 'OS Destino', key: 'n_os' },
-          { label: 'Item/Serviço', key: 'titulo' },
-          { label: 'Cod OS completo', key: 'cod_os_completo' },
-          { label: 'Cód. Produto:', key: 'codigo_interno' },
-          { label: 'Peça', key: 'nome' },
-          { label: 'Situação', key: 'entregue' },
-          { label: 'Solicitado', key: 'qtde_solicitada', align: 'right', sum: true },
-          { label: 'Entregue', key: 'qtde_entregue', align: 'right', sum: true },
-          { label: 'Disponivel', key: 'qtde_disponivel', align: 'right', sum: true },
-          { label: 'Produzindo', key: 'qtde_produzindo', align: 'right', sum: true },
-          { label: 'OS produzindo', key: 'cod_solicitacao' },
-          { label: 'Orçamento', key: 'n_orcamento' },
-          { label: 'cliente', key: 'cliente' }
-        ],
-        filter: item => item.entregue && String(item.entregue).toLowerCase().includes('parcial')
-      }
-    };
-
-    async function fetchData() {
-      try {
-        const response = await fetch(API_URL);
-        rawData = await response.json();
-        populateFilters();
-        render();
-      } catch (err) {
-        console.error('Erro ao buscar dados:', err);
-      }
-    }
-
-    function populateFilters() {
-      const fillSelect = (id, key) => {
-        const select = document.getElementById(id);
-        const uniqueValues = [...new Set(rawData.map(i => i[key]).filter(v => v !== null && v !== ''))].sort();
-        select.innerHTML = '<option value="">Todos</option>';
-        uniqueValues.forEach(val => {
-          const opt = document.createElement('option');
-          opt.value = val;
-          opt.textContent = val;
-          select.appendChild(opt);
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            fetchData();
         });
-      };
 
-      fillSelect('filter-os', 'n_os');
-      fillSelect('filter-cod-produto', 'codigo_interno');
-      fillSelect('filter-cliente', 'cliente');
-      fillSelect('filter-os-prod', 'cod_solicitacao');
-    }
+        async function fetchData() {
+            const icon = document.getElementById('refreshIcon');
+            if (icon) icon.classList.add('animate-spin');
 
-    // Remove duplicatas que surgem do JOIN da API mantendo o comportamento de agregação da tabela do Power BI
-    function deduplicateData(data, tab) {
-      if (tab === 'produzindo' || tab === 'entregues') {
-        const seen = new Set();
-        return data.filter(item => {
-          const key = `${item.n_os}-${item.cod_os_completo}-${item.codigo_interno}-${item.cod_solicitacao}-${item.n_orcamento}`;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-      }
-      return data;
-    }
+            try {
+                const response = await fetch(`${API_URL}?_t=${Date.now()}`);
+                if (!response.ok) throw new Error(`HTTP Status: ${response.status}`);
 
-    function render() {
-      const config = tabConfigs[currentTab];
-      
-      const osProdContainer = document.getElementById('container-os-prod');
-      if (currentTab === 'produzindo' || currentTab === 'parciais') {
-        osProdContainer.classList.remove('hidden');
-      } else {
-        osProdContainer.classList.add('hidden');
-      }
-
-      // 1. Filtragem Contextual da Aba
-      let filtered = rawData.filter(config.filter);
-
-      // 2. Desduplicação idêntica ao contexto visual do Power BI
-      filtered = deduplicateData(filtered, currentTab);
-
-      // 3. Aplicação dos Slicers do Usuário
-      const osVal = document.getElementById('filter-os').value;
-      const prodVal = document.getElementById('filter-cod-produto').value;
-      const cliVal = document.getElementById('filter-cliente').value;
-      const osProdVal = document.getElementById('filter-os-prod').value;
-
-      if (osVal) filtered = filtered.filter(i => String(i.n_os) === osVal);
-      if (prodVal) filtered = filtered.filter(i => i.codigo_interno === prodVal);
-      if (cliVal) filtered = filtered.filter(i => i.cliente === cliVal);
-      if (osProdVal && !osProdContainer.classList.contains('hidden')) {
-        filtered = filtered.filter(i => String(i.cod_solicitacao) === osProdVal);
-      }
-
-      // Atualiza Total de ITENS (Contagem de Linhas Exata)
-      document.getElementById('kpi-count').textContent = filtered.length;
-
-      // Header
-      document.getElementById('table-header').innerHTML = config.cols.map(col => `
-        <th class="${col.align === 'right' ? 'text-right' : 'text-left'}">${col.label}</th>
-      `).join('');
-
-      // Body
-      document.getElementById('table-body').innerHTML = filtered.map(row => `
-        <tr>
-          ${config.cols.map(col => `
-            <td class="${col.align === 'right' ? 'text-right' : 'text-left'}">
-              ${row[col.key] !== null && row[col.key] !== undefined ? row[col.key] : ''}
-            </td>
-          `).join('')}
-        </tr>
-      `).join('');
-
-      // Footer (Soma das Colunas de Quantidade)
-      document.getElementById('table-footer').innerHTML = config.cols.map((col, idx) => {
-        if (idx === 0) return `<td>Total</td>`;
-        if (col.sum) {
-          const sum = filtered.reduce((acc, curr) => acc + (Number(curr[col.key]) || 0), 0);
-          return `<td class="text-right">${sum.toLocaleString('pt-BR')}</td>`;
+                rawData = await response.json();
+                populateDropdowns();
+                updateBadges();
+                applyFilters();
+            } catch (err) {
+                console.error("Erro ao conectar com API:", err);
+            } finally {
+                if (icon) icon.classList.remove('animate-spin');
+            }
         }
-        return `<td></td>`;
-      }).join('');
-    }
 
-    // Abas
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-        btn.classList.add('active-tab');
-        currentTab = btn.getAttribute('data-tab');
-        render();
-      });
-    });
+        function populateDropdowns() {
+            const clienteSelect = document.getElementById('filterCliente');
+            const produtoSelect = document.getElementById('filterProduto');
 
-    // Filtros
-    ['filter-os', 'filter-cod-produto', 'filter-cliente', 'filter-os-prod'].forEach(id => {
-      document.getElementById(id).addEventListener('change', render);
-    });
+            const clientes = [...new Set(rawData.map(i => i.cliente).filter(Boolean))].sort();
+            const produtos = [...new Set(rawData.map(i => i.codigo_interno).filter(Boolean))].sort();
 
-    fetchData();
-  </script>
+            clienteSelect.innerHTML = '<option value="" class="bg-slate-900">Todos os Clientes</option>';
+            clientes.forEach(c => clienteSelect.innerHTML += `<option value="${c}" class="bg-slate-900">${c}</option>`);
+
+            produtoSelect.innerHTML = '<option value="" class="bg-slate-900">Todos os Produtos</option>';
+            produtos.forEach(p => produtoSelect.innerHTML += `<option value="${p}" class="bg-slate-900">${p}</option>`);
+        }
+
+        function updateBadges() {
+            document.getElementById('badge-estoque').textContent = rawData.filter(i => Number(i.qtde_disponivel) > 0).length;
+            document.getElementById('badge-orcamento').textContent = rawData.filter(i => i.n_orcamento).length;
+            document.getElementById('badge-produzindo').textContent = rawData.filter(i => Number(i.qtde_produzindo) > 0).length;
+            document.getElementById('badge-entregues').textContent = rawData.filter(i => i.entregue && i.entregue.includes('Total')).length;
+            document.getElementById('badge-parciais').textContent = rawData.filter(i => i.entregue && i.entregue.includes('Parcial')).length;
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active-tab');
+                btn.classList.add('text-slate-400', 'border-transparent');
+            });
+
+            const currentBtn = document.getElementById(`tab-${tab}`);
+            if (currentBtn) currentBtn.classList.add('active-tab');
+
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const selectedCliente = document.getElementById('filterCliente').value;
+            const selectedProduto = document.getElementById('filterProduto').value;
+
+            // 1. Filtragem por Aba Ativa
+            let tabData = rawData.filter(item => {
+                if (activeTab === 'estoque') return Number(item.qtde_disponivel) > 0;
+                if (activeTab === 'orcamento') return item.n_orcamento !== null && item.n_orcamento !== "";
+                if (activeTab === 'produzindo') return Number(item.qtde_produzindo) > 0;
+                if (activeTab === 'entregues') return item.entregue && item.entregue.includes('Total');
+                if (activeTab === 'parciais') return item.entregue && item.entregue.includes('Parcial');
+                return true;
+            });
+
+            // 2. Aplicação dos Filtros do Usuário
+            filteredData = tabData.filter(item => {
+                if (selectedCliente && item.cliente !== selectedCliente) return false;
+                if (selectedProduto && item.codigo_interno !== selectedProduto) return false;
+
+                if (search) {
+                    const fullText = `${item.n_os} ${item.cod_os_completo} ${item.titulo} ${item.codigo_interno} ${item.nome} ${item.cliente} ${item.n_orcamento}`.toLowerCase();
+                    if (!fullText.includes(search)) return false;
+                }
+
+                return true;
+            });
+
+            updateKPIs();
+            renderTable();
+        }
+
+        function updateKPIs() {
+            document.getElementById('kpiTotalItens').textContent = filteredData.length;
+            document.getElementById('kpiQtdSolicitada').textContent = filteredData.reduce((acc, i) => acc + (Number(i.qtde_solicitada) || 0), 0);
+            document.getElementById('kpiQtdDisponivel').textContent = filteredData.reduce((acc, i) => acc + (Number(i.qtde_disponivel) || 0), 0);
+            document.getElementById('kpiQtdProduzindo').textContent = filteredData.reduce((acc, i) => acc + (Number(i.qtde_produzindo) || 0), 0);
+        }
+
+        function renderTable() {
+            const thead = document.getElementById('tableHeader');
+            const tbody = document.getElementById('tableBody');
+            const emptyMsg = document.getElementById('emptyMessage');
+
+            tbody.innerHTML = '';
+
+            if (filteredData.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                document.getElementById('totalRegistros').textContent = '0';
+                document.getElementById('sumRodape').textContent = '';
+                return;
+            }
+
+            emptyMsg.classList.add('hidden');
+            document.getElementById('totalRegistros').textContent = filteredData.length;
+
+            // Configuração de Colunas Dinâmicas
+            let columns = [
+                { label: 'Nº OS / Cód. Completo', render: i => `<span class="font-bold text-amber-400">OS #${i.n_os || '-'}</span><br><span class="text-[10px] text-slate-500 font-mono">${i.cod_os_completo || '-'}</span>` },
+                { label: 'Item / Descrição', render: i => `<div class="font-semibold text-slate-200">${i.titulo || '-'}</div><div class="text-[10px] text-slate-400">${i.nome || ''}</div>` },
+                { label: 'Cód. Interno', render: i => `<span class="bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-mono text-slate-300">${i.codigo_interno || '-'}</span>` },
+                { label: 'Cliente', render: i => `<span class="text-slate-300 font-medium">${i.cliente || '-'}</span>` },
+                { label: 'Status', render: i => `<span class="px-2 py-0.5 rounded text-[10px] font-bold ${getStatusClass(i.entregue)}">${i.entregue || 'Sem Status'}</span>` }
+            ];
+
+            if (activeTab === 'parciais' || activeTab === 'estoque') {
+                columns.push({ label: 'Qtd. Solicitada', render: i => `<span class="font-mono text-amber-400">${i.qtde_solicitada || 0}</span>` });
+                columns.push({ label: 'Qtd. Disponível', render: i => `<span class="font-mono text-emerald-400 font-bold">${i.qtde_disponivel || 0}</span>` });
+            }
+
+            // Renderiza Header
+            thead.innerHTML = columns.map(c => `<th class="p-3.5">${c.label}</th>`).join('');
+
+            // Renderiza Linhas
+            filteredData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition border-b border-slate-800/40';
+                tr.innerHTML = columns.map(c => `<td class="p-3">${c.render(item)}</td>`).join('');
+                tbody.appendChild(tr);
+            });
+
+            lucide.createIcons();
+        }
+
+        function getStatusClass(status) {
+            if (!status) return 'bg-slate-800 text-slate-400';
+            if (status.includes('Total')) return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            if (status.includes('Parcial')) return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+            return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterCliente').value = '';
+            document.getElementById('filterProduto').value = '';
+            applyFilters();
+        }
+    </script>
 </body>
 </html>
