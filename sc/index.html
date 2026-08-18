@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sintercan - Controle de Estoque V1</title>
+  <title>Sintercan - Controle de Estoque</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    /* Tema Oficial Consultoria RF Dark */
     body { background-color: #070d1e; color: #f8fafc; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     .bg-rf-header { background-color: #0b1329; }
     .bg-rf-card { background-color: #0f172a; }
@@ -20,7 +19,8 @@
     .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
     table { border-collapse: separate; border-spacing: 0; width: 100%; }
-    th { border-bottom: 2px solid #f59e0b; color: #94a3b8; font-weight: 700; font-size: 10px; text-transform: uppercase; padding: 10px 8px; text-align: left; background-color: #070d1e; }
+    th { border-bottom: 2px solid #f59e0b; color: #94a3b8; font-weight: 700; font-size: 10px; text-transform: uppercase; padding: 10px 8px; text-align: left; background-color: #070d1e; user-select: none; }
+    th:hover { color: #f59e0b; }
     td { font-size: 11px; padding: 8px; color: #e2e8f0; white-space: nowrap; border-bottom: 1px solid #1e293b; }
     tr:nth-child(even) { background-color: #0b1329; }
     tr:hover { background-color: #1e293b; }
@@ -35,19 +35,18 @@
 </head>
 <body class="min-h-screen flex flex-col custom-scroll">
 
-  <!-- HEADER OFICIAL CONSULTORIA RF -->
+  <!-- HEADER -->
   <header class="bg-rf-header border-b border-rf sticky top-0 z-50 shadow-md">
     <div class="max-w-[1700px] mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
-      
       <div class="flex items-center gap-3">
         <div class="flex items-center justify-center p-2 bg-amber-500 rounded-xl text-slate-950 font-black">
           <i data-lucide="cog" class="w-6 h-6"></i>
         </div>
         <div>
           <h1 class="text-base font-black tracking-wider text-white uppercase flex items-center gap-2">
-            CONSULTORIA RF <span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono">V6.5</span>
+            CONSULTORIA RF <span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono">V1</span>
           </h1>
-          <p class="text-xs text-slate-400 font-medium">Sintercan - Controle Semanal de Produção & Peças V1</p>
+          <p class="text-xs text-slate-400 font-medium">Sintercan - Controle Semanal de Produção & Peças</p>
         </div>
       </div>
 
@@ -62,7 +61,7 @@
 
   <main class="max-w-[1700px] w-full mx-auto p-4 flex flex-col gap-4 flex-1">
 
-    <!-- CARDS SUPERIORES DE KPIS -->
+    <!-- KPIS -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-rf-card p-4 rounded-2xl border border-rf shadow-md flex items-center justify-between">
         <div>
@@ -97,17 +96,14 @@
       </div>
     </div>
 
-    <!-- BARRA DE PESQUISA E FILTROS COMPLETA -->
+    <!-- FILTROS -->
     <div class="bg-rf-card p-3 rounded-2xl border border-rf flex flex-wrap items-center gap-3 shadow-md">
-      
-      <!-- Busca Global -->
       <div class="flex items-center gap-2 flex-1 min-w-[240px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
         <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
         <input type="text" id="searchInput" oninput="render()" placeholder="Pesquisar qualquer coisa (OS, Pedido, SC, Título, Cliente...)" 
                class="w-full text-xs bg-transparent text-white focus:outline-none placeholder-slate-500">
       </div>
 
-      <!-- Filtro OS Destino -->
       <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[160px]">
         <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
         <select id="filterOs" onchange="render()" class="w-full text-xs bg-transparent text-white focus:outline-none cursor-pointer">
@@ -115,7 +111,6 @@
         </select>
       </div>
 
-      <!-- Filtro Produto -->
       <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[160px]">
         <i data-lucide="tag" class="w-4 h-4 text-slate-400"></i>
         <select id="filterProduto" onchange="render()" class="w-full text-xs bg-transparent text-white focus:outline-none cursor-pointer">
@@ -123,7 +118,6 @@
         </select>
       </div>
 
-      <!-- Filtro Cliente -->
       <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[160px]">
         <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
         <select id="filterCliente" onchange="render()" class="w-full text-xs bg-transparent text-white focus:outline-none cursor-pointer">
@@ -137,7 +131,7 @@
       </button>
     </div>
 
-    <!-- ABAS NO TOPO DA TABELA -->
+    <!-- ABAS -->
     <div class="flex border-b border-rf gap-2 overflow-x-auto custom-scroll pt-1">
       <button id="tab-estoque" onclick="switchTab('estoque')" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-amber-500 bg-rf-card text-amber-400 flex items-center gap-2 whitespace-nowrap tab-active">
         <i data-lucide="box" class="w-4 h-4"></i>
@@ -165,7 +159,7 @@
       </button>
     </div>
 
-    <!-- TABELA PRINCIPAL DE DADOS -->
+    <!-- TABELA -->
     <div class="bg-rf-card rounded-2xl border border-rf overflow-hidden shadow-md flex-1 flex flex-col">
       <div class="overflow-x-auto custom-scroll flex-1">
         <table>
@@ -176,7 +170,6 @@
         </table>
       </div>
 
-      <!-- Rodapé com Totais -->
       <div class="bg-slate-950 p-3 border-t border-rf flex justify-between items-center text-xs font-bold text-slate-300">
         <span>REGISTROS ENCONTRADOS: <strong id="totalCount" class="text-amber-400">0</strong></span>
         <div id="footerSums" class="flex gap-4 font-mono"></div>
@@ -189,6 +182,10 @@
     const API_URL = 'https://sintercan.consultoriarf.net/estoque_sc';
     let rawData = [];
     let currentTab = 'estoque';
+
+    // Variáveis Globais de Ordenação (Padrão: cod_os_completo)
+    let sortColumn = 'cod_os_completo';
+    let sortDirection = 'asc';
 
     const tabConfigs = {
       estoque: {
@@ -309,11 +306,22 @@
       render();
     }
 
+    // Função para alterar ordenação ao clicar na coluna
+    function handleSort(key) {
+      if (sortColumn === key) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortColumn = key;
+        sortDirection = 'asc';
+      }
+      render();
+    }
+
     function render() {
       const config = tabConfigs[currentTab];
       let filtered = rawData.filter(config.filter);
 
-      // Filtros
+      // Filtros do Usuário
       const search = document.getElementById('searchInput').value.toLowerCase().trim();
       const osVal = document.getElementById('filterOs').value;
       const prodVal = document.getElementById('filterProduto').value;
@@ -334,20 +342,44 @@
       if (prodVal) filtered = filtered.filter(i => i.codigo_interno === prodVal);
       if (cliVal) filtered = filtered.filter(i => i.cliente === cliVal);
 
+      // Lógica de Ordenação Dinâmica
+      filtered.sort((a, b) => {
+        let valA = a[sortColumn] ?? '';
+        let valB = b[sortColumn] ?? '';
+
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return sortDirection === 'asc' ? valA - valB : valB - valA;
+        }
+
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+
       // KPIs
       document.getElementById('kpiTotalItens').textContent = filtered.length;
       document.getElementById('kpiQtdSolicitada').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_solicitada) || 0), 0);
       document.getElementById('kpiQtdDisponivel').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_disponivel) || 0), 0);
       document.getElementById('kpiQtdProduzindo').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_produzindo) || 0), 0);
-
       document.getElementById('totalCount').textContent = filtered.length;
 
-      // Render Table Header
-      document.getElementById('tableHeader').innerHTML = config.cols.map(c => `
-        <th class="${c.align === 'right' ? 'text-right' : 'text-left'}">${c.label}</th>
-      `).join('');
+      // Render Header com os indicadores de ordenação
+      document.getElementById('tableHeader').innerHTML = config.cols.map(c => {
+        const isSorted = sortColumn === c.key;
+        const icon = isSorted ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : '';
+        const activeClass = isSorted ? 'text-amber-400 font-black' : '';
 
-      // Render Table Body
+        return `
+          <th onclick="handleSort('${c.key}')" class="cursor-pointer ${c.align === 'right' ? 'text-right' : 'text-left'} ${activeClass}">
+            ${c.label}<span class="text-amber-400">${icon}</span>
+          </th>
+        `;
+      }).join('');
+
+      // Render Body
       document.getElementById('tableBody').innerHTML = filtered.map(row => `
         <tr>
           ${config.cols.map(c => `
@@ -358,7 +390,7 @@
         </tr>
       `).join('');
 
-      // Footer Sums
+      // Render Footer Sums
       const sumsContainer = document.getElementById('footerSums');
       sumsContainer.innerHTML = '';
       config.cols.filter(c => c.sum).forEach(c => {
@@ -374,6 +406,8 @@
       document.getElementById('filterOs').value = '';
       document.getElementById('filterProduto').value = '';
       document.getElementById('filterCliente').value = '';
+      sortColumn = 'cod_os_completo';
+      sortDirection = 'asc';
       render();
     }
   </script>
