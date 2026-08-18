@@ -3,138 +3,206 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CONTROLE DE PEÇAS SINTERCAN</title>
+  <title>Sintercan - Controle de Estoque</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    /* Paleta Oficial Consultoria RF Dark */
-    body { background-color: #070d1e; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    /* Tema Oficial Consultoria RF Dark */
+    body { background-color: #070d1e; color: #f8fafc; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .bg-rf-header { background-color: #0b1329; }
     .bg-rf-card { background-color: #0f172a; }
     .border-rf { border-color: #1e293b; }
-    .active-tab { background-color: #262626 !important; color: #ffffff !important; border-color: #f59e0b !important; }
     
-    table { border-collapse: collapse; width: 100%; }
-    th { border-bottom: 2px solid #f59e0b; color: #cbd5e1; font-weight: 600; font-size: 11px; padding: 6px 4px; text-align: left; background-color: #070d1e; }
-    td { font-size: 11px; padding: 6px 4px; color: #f1f5f9; white-space: nowrap; border-bottom: 1px solid #1e293b; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #070d1e; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    table { border-collapse: separate; border-spacing: 0; width: 100%; }
+    th { border-bottom: 2px solid #f59e0b; color: #94a3b8; font-weight: 700; font-size: 10px; text-transform: uppercase; padding: 10px 8px; text-align: left; background-color: #070d1e; }
+    td { font-size: 11px; padding: 8px; color: #e2e8f0; white-space: nowrap; border-bottom: 1px solid #1e293b; }
     tr:nth-child(even) { background-color: #0b1329; }
     tr:hover { background-color: #1e293b; }
-    
-    .slicer-label { background-color: #000000; color: #ffffff; font-size: 11px; font-weight: bold; padding: 2px 6px; }
+
+    .tab-active {
+      background-color: #f59e0b !important;
+      color: #070d1e !important;
+      border-color: #f59e0b !important;
+      font-weight: 800 !important;
+    }
   </style>
 </head>
-<body class="p-4 flex flex-col min-h-screen">
+<body class="min-h-screen flex flex-col custom-scroll">
 
-  <div class="bg-rf-card border border-rf rounded-lg shadow-2xl p-4 flex-grow flex flex-col max-w-[1700px] w-full mx-auto">
-
-    <!-- Header Fiel -->
-    <header class="flex justify-between items-center mb-3 border-b border-rf pb-3">
-      <div class="flex items-center gap-2">
-        <div class="bg-amber-500 text-slate-950 font-black p-1 rounded text-lg">⚙</div>
+  <!-- HEADER OFICIAL CONSULTORIA RF -->
+  <header class="bg-rf-header border-b border-rf sticky top-0 z-50 shadow-md">
+    <div class="max-w-[1700px] mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+      
+      <div class="flex items-center gap-3">
+        <div class="flex items-center justify-center p-2 bg-amber-500 rounded-xl text-slate-950 font-black">
+          <i data-lucide="cog" class="w-6 h-6"></i>
+        </div>
         <div>
-          <h1 class="text-xs font-bold uppercase text-slate-200 leading-none">SINTERCAN</h1>
-          <span class="text-[9px] text-slate-400 leading-none">Usinagem e Ferramentaria de Precisão</span>
+          <h1 class="text-base font-black tracking-wider text-white uppercase flex items-center gap-2">
+            CONSULTORIA RF <span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono">V6.5</span>
+          </h1>
+          <p class="text-xs text-slate-400 font-medium">Sintercan - Controle Semanal de Produção & Peças</p>
         </div>
       </div>
 
-      <h2 class="text-xl font-light tracking-wide text-white uppercase">
-        CONTROLE DE PEÇAS SINTERCAN
-      </h2>
-
-      <div class="border-2 border-slate-600 bg-slate-950 px-6 py-1 text-center min-w-[120px] rounded">
-        <span id="kpi-count" class="block text-3xl font-bold text-white leading-none">0</span>
-        <span class="text-[10px] font-bold text-slate-400 tracking-widest uppercase">ITENS</span>
+      <div class="flex items-center gap-3">
+        <button id="btnRefresh" onclick="fetchData()" class="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs transition shadow-lg shadow-amber-500/10">
+          <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
+          Atualizar Dados
+        </button>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <!-- NAVEGAÇÃO ENTRE ABAS (NO TOPO) -->
-    <nav class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
-      <button data-tab="estoque" class="tab-btn active-tab border border-slate-700 text-slate-300 font-bold py-1.5 rounded text-xs uppercase transition">
+  <main class="max-w-[1700px] w-full mx-auto p-4 flex flex-col gap-4 flex-1">
+
+    <!-- CARDS SUPERIORES DE KPIS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-rf-card p-4 rounded-2xl border border-rf shadow-md flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">TOTAL DE ITENS (FILTRADO)</p>
+          <h3 id="kpiTotalItens" class="text-2xl font-black text-white mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i data-lucide="boxes" class="w-5 h-5"></i></div>
+      </div>
+
+      <div class="bg-rf-card p-4 rounded-2xl border border-rf shadow-md flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">QUANTIDADE SOLICITADA</p>
+          <h3 id="kpiQtdSolicitada" class="text-2xl font-black text-amber-400 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20"><i data-lucide="clipboard-list" class="w-5 h-5"></i></div>
+      </div>
+
+      <div class="bg-rf-card p-4 rounded-2xl border border-rf shadow-md flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">QUANTIDADE DISPONÍVEL</p>
+          <h3 id="kpiQtdDisponivel" class="text-2xl font-black text-emerald-400 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20"><i data-lucide="check-circle-2" class="w-5 h-5"></i></div>
+      </div>
+
+      <div class="bg-rf-card p-4 rounded-2xl border border-rf shadow-md flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">EM PRODUÇÃO</p>
+          <h3 id="kpiQtdProduzindo" class="text-2xl font-black text-indigo-400 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20"><i data-lucide="factory" class="w-5 h-5"></i></div>
+      </div>
+    </div>
+
+    <!-- BARRA DE PESQUISA E FILTROS COMPLETA -->
+    <div class="bg-rf-card p-3 rounded-2xl border border-rf flex flex-wrap items-center gap-3 shadow-md">
+      
+      <!-- Busca Global -->
+      <div class="flex items-center gap-2 flex-1 min-w-[240px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+        <input type="text" id="searchInput" oninput="render()" placeholder="Pesquisar qualquer coisa (OS, Pedido, SC, Título, Cliente...)" 
+               class="w-full text-xs bg-transparent text-white focus:outline-none placeholder-slate-500">
+      </div>
+
+      <!-- Filtro OS Destino -->
+      <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[160px]">
+        <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
+        <select id="filterOs" onchange="render()" class="w-full text-xs bg-transparent text-white focus:outline-none cursor-pointer">
+          <option value="" class="bg-slate-900">OS Destino (Todas)</option>
+        </select>
+      </div>
+
+      <!-- Filtro Produto -->
+      <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[160px]">
+        <i data-lucide="tag" class="w-4 h-4 text-slate-400"></i>
+        <select id="filterProduto" onchange="render()" class="w-full text-xs bg-transparent text-white focus:outline-none cursor-pointer">
+          <option value="" class="bg-slate-900">Cód. Produto (Todos)</option>
+        </select>
+      </div>
+
+      <!-- Filtro Cliente -->
+      <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-w-[160px]">
+        <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+        <select id="filterCliente" onchange="render()" class="w-full text-xs bg-transparent text-white focus:outline-none cursor-pointer">
+          <option value="" class="bg-slate-900">Todos os Clientes</option>
+        </select>
+      </div>
+
+      <button onclick="clearFilters()" class="flex items-center gap-2 px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-bold text-xs transition">
+        <i data-lucide="filter-x" class="w-4 h-4"></i>
+        Limpar
+      </button>
+    </div>
+
+    <!-- ABAS NO TOPO DA TABELA -->
+    <div class="flex border-b border-rf gap-2 overflow-x-auto custom-scroll pt-1">
+      <button id="tab-estoque" onclick="switchTab('estoque')" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-amber-500 bg-rf-card text-amber-400 flex items-center gap-2 whitespace-nowrap tab-active">
+        <i data-lucide="box" class="w-4 h-4"></i>
         EM ESTOQUE
       </button>
-      <button data-tab="orcamento" class="tab-btn border border-slate-700 text-slate-300 font-bold py-1.5 rounded text-xs uppercase transition">
+
+      <button id="tab-orcamento" onclick="switchTab('orcamento')" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
         EM ESTOQUE PARA ORÇAMENTO
       </button>
-      <button data-tab="produzindo" class="tab-btn border border-slate-700 text-slate-300 font-bold py-1.5 rounded text-xs uppercase transition">
+
+      <button id="tab-produzindo" onclick="switchTab('produzindo')" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="hammer" class="w-4 h-4"></i>
         PRODUZINDO
       </button>
-      <button data-tab="entregues" class="tab-btn border border-slate-700 text-slate-300 font-bold py-1.5 rounded text-xs uppercase transition">
+
+      <button id="tab-entregues" onclick="switchTab('entregues')" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="check-check" class="w-4 h-4"></i>
         ENTREGUES
       </button>
-      <button data-tab="parciais" class="tab-btn border border-slate-700 text-slate-300 font-bold py-1.5 rounded text-xs uppercase transition">
+
+      <button id="tab-parciais" onclick="switchTab('parciais')" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="pie-chart" class="w-4 h-4"></i>
         PARCIAIS
       </button>
-    </nav>
+    </div>
 
-    <!-- BUSCA GLOBAL + SLICERS -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
-      <!-- Campo de Pesquisa em Tempo Real -->
-      <div class="lg:col-span-1">
-        <div class="slicer-label">Pesquisar</div>
-        <input type="text" id="input-search" placeholder="Buscar peça, OS, cliente..." class="w-full border border-slate-700 p-1 text-xs bg-slate-950 text-white focus:outline-none focus:border-amber-500">
+    <!-- TABELA PRINCIPAL DE DADOS -->
+    <div class="bg-rf-card rounded-2xl border border-rf overflow-hidden shadow-md flex-1 flex flex-col">
+      <div class="overflow-x-auto custom-scroll flex-1">
+        <table>
+          <thead class="sticky top-0 z-10">
+            <tr id="tableHeader"></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
       </div>
 
-      <div>
-        <div class="slicer-label">OS Destino</div>
-        <select id="filter-os" class="w-full border border-slate-700 p-1 text-xs bg-slate-950 text-white focus:outline-none">
-          <option value="">Todos</option>
-        </select>
+      <!-- Rodapé com Totais -->
+      <div class="bg-slate-950 p-3 border-t border-rf flex justify-between items-center text-xs font-bold text-slate-300">
+        <span>REGISTROS ENCONTRADOS: <strong id="totalCount" class="text-amber-400">0</strong></span>
+        <div id="footerSums" class="flex gap-4 font-mono"></div>
       </div>
+    </div>
 
-      <div>
-        <div class="slicer-label">Cód. Produto</div>
-        <select id="filter-cod-produto" class="w-full border border-slate-700 p-1 text-xs bg-slate-950 text-white focus:outline-none">
-          <option value="">Todos</option>
-        </select>
-      </div>
-
-      <div>
-        <div class="slicer-label">cliente</div>
-        <select id="filter-cliente" class="w-full border border-slate-700 p-1 text-xs bg-slate-950 text-white focus:outline-none">
-          <option value="">Todos</option>
-        </select>
-      </div>
-
-      <div id="container-os-prod" class="hidden">
-        <div class="slicer-label">OS produzindo</div>
-        <select id="filter-os-prod" class="w-full border border-slate-700 p-1 text-xs bg-slate-950 text-white focus:outline-none">
-          <option value="">Todos</option>
-        </select>
-      </div>
-    </section>
-
-    <!-- Tabela idêntica -->
-    <main class="flex-grow overflow-auto border border-rf bg-slate-950 rounded min-h-[450px]">
-      <table>
-        <thead class="sticky top-0 z-10">
-          <tr id="table-header"></tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-        <tfoot class="bg-slate-900 font-bold border-t-2 border-amber-500 sticky bottom-0">
-          <tr id="table-footer"></tr>
-        </tfoot>
-      </table>
-    </main>
-
-  </div>
+  </main>
 
   <script>
     const API_URL = 'https://sintercan.consultoriarf.net/estoque_sc';
     let rawData = [];
     let currentTab = 'estoque';
 
-    // Definição exata das Colunas por Aba do Power BI
     const tabConfigs = {
       estoque: {
         cols: [
           { label: 'OS Destino', key: 'n_os' },
           { label: 'Item/Serviço', key: 'titulo' },
           { label: 'Cod OS completo', key: 'cod_os_completo' },
-          { label: 'Cód. Produto:', key: 'codigo_interno' },
+          { label: 'Cód. Produto', key: 'codigo_interno' },
           { label: 'Peça', key: 'nome' },
           { label: 'Disponivel', key: 'qtde_disponivel', align: 'right', sum: true },
           { label: 'n_orcamento', key: 'n_orcamento', align: 'right' },
           { label: 'cliente', key: 'cliente' }
         ],
-        filter: item => Number(item.qtde_disponivel) > 0 || (item.entregue && String(item.entregue).toLowerCase() === 'disponivel')
+        filter: item => Number(item.qtde_disponivel) > 0
       },
       orcamento: {
         cols: [
@@ -151,7 +219,7 @@
           { label: 'OS Destino', key: 'n_os' },
           { label: 'Item/Serviço', key: 'titulo' },
           { label: 'Cod OS completo', key: 'cod_os_completo' },
-          { label: 'Cód. Produto:', key: 'codigo_interno' },
+          { label: 'Cód. Produto', key: 'codigo_interno' },
           { label: 'Peça', key: 'nome' },
           { label: 'OS produzindo', key: 'cod_solicitacao' },
           { label: 'Qtde', key: 'qtde_produzindo', align: 'right', sum: true },
@@ -165,7 +233,7 @@
           { label: 'OS Destino', key: 'n_os' },
           { label: 'Item/Serviço', key: 'titulo' },
           { label: 'Cod OS completo', key: 'cod_os_completo' },
-          { label: 'Cód. Produto:', key: 'codigo_interno' },
+          { label: 'Cód. Produto', key: 'codigo_interno' },
           { label: 'Peça', key: 'nome' },
           { label: 'OS produzindo', key: 'cod_solicitacao' },
           { label: 'n_orcamento', key: 'n_orcamento' },
@@ -178,7 +246,7 @@
           { label: 'OS Destino', key: 'n_os' },
           { label: 'Item/Serviço', key: 'titulo' },
           { label: 'Cod OS completo', key: 'cod_os_completo' },
-          { label: 'Cód. Produto:', key: 'codigo_interno' },
+          { label: 'Cód. Produto', key: 'codigo_interno' },
           { label: 'Peça', key: 'nome' },
           { label: 'Situação', key: 'entregue' },
           { label: 'Solicitado', key: 'qtde_solicitada', align: 'right', sum: true },
@@ -193,137 +261,121 @@
       }
     };
 
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      fetchData();
+    });
+
     async function fetchData() {
+      const icon = document.getElementById('refreshIcon');
+      if (icon) icon.classList.add('animate-spin');
+
       try {
-        const response = await fetch(API_URL);
-        rawData = await response.json();
-        populateFilters();
+        const res = await fetch(`${API_URL}?_t=${Date.now()}`);
+        rawData = await res.json();
+        populateDropdowns();
         render();
       } catch (err) {
-        console.error('Erro ao buscar dados:', err);
+        console.error("Erro ao carregar dados:", err);
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
       }
     }
 
-    function populateFilters() {
-      const fillSelect = (id, key) => {
-        const select = document.getElementById(id);
-        const uniqueValues = [...new Set(rawData.map(i => i[key]).filter(v => v !== null && v !== ''))].sort();
-        select.innerHTML = '<option value="">Todos</option>';
-        uniqueValues.forEach(val => {
-          const opt = document.createElement('option');
-          opt.value = val;
-          opt.textContent = val;
-          select.appendChild(opt);
-        });
+    function populateDropdowns() {
+      const fill = (id, key) => {
+        const el = document.getElementById(id);
+        const vals = [...new Set(rawData.map(i => i[key]).filter(Boolean))].sort();
+        const firstOpt = el.options[0].text;
+        el.innerHTML = `<option value="" class="bg-slate-900">${firstOpt}</option>`;
+        vals.forEach(v => el.innerHTML += `<option value="${v}" class="bg-slate-900">${v}</option>`);
       };
 
-      fillSelect('filter-os', 'n_os');
-      fillSelect('filter-cod-produto', 'codigo_interno');
-      fillSelect('filter-cliente', 'cliente');
-      fillSelect('filter-os-prod', 'cod_solicitacao');
+      fill('filterOs', 'n_os');
+      fill('filterProduto', 'codigo_interno');
+      fill('filterCliente', 'cliente');
     }
 
-    function deduplicateData(data, tab) {
-      if (tab === 'produzindo' || tab === 'entregues') {
-        const seen = new Set();
-        return data.filter(item => {
-          const key = `${item.n_os}-${item.cod_os_completo}-${item.codigo_interno}-${item.cod_solicitacao}-${item.n_orcamento}`;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-      }
-      return data;
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('tab-active');
+        b.classList.add('text-slate-400', 'border-transparent');
+      });
+
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      if (activeBtn) activeBtn.classList.add('tab-active');
+
+      render();
     }
 
     function render() {
       const config = tabConfigs[currentTab];
-      
-      const osProdContainer = document.getElementById('container-os-prod');
-      if (currentTab === 'produzindo' || currentTab === 'parciais') {
-        osProdContainer.classList.remove('hidden');
-      } else {
-        osProdContainer.classList.add('hidden');
-      }
-
-      // 1. Filtragem por Aba
       let filtered = rawData.filter(config.filter);
 
-      // 2. Desduplicação de Contexto
-      filtered = deduplicateData(filtered, currentTab);
+      // Filtros
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+      const osVal = document.getElementById('filterOs').value;
+      const prodVal = document.getElementById('filterProduto').value;
+      const cliVal = document.getElementById('filterCliente').value;
 
-      // 3. Aplicação da Pesquisa Textual + Filtros Slicers
-      const searchText = document.getElementById('input-search').value.toLowerCase().trim();
-      const osVal = document.getElementById('filter-os').value;
-      const prodVal = document.getElementById('filter-cod-produto').value;
-      const cliVal = document.getElementById('filter-cliente').value;
-      const osProdVal = document.getElementById('filter-os-prod').value;
-
-      if (searchText) {
+      if (search) {
         filtered = filtered.filter(i => 
-          (i.n_os && String(i.n_os).toLowerCase().includes(searchText)) ||
-          (i.cod_os_completo && String(i.cod_os_completo).toLowerCase().includes(searchText)) ||
-          (i.codigo_interno && String(i.codigo_interno).toLowerCase().includes(searchText)) ||
-          (i.nome && String(i.nome).toLowerCase().includes(searchText)) ||
-          (i.titulo && String(i.titulo).toLowerCase().includes(searchText)) ||
-          (i.cliente && String(i.cliente).toLowerCase().includes(searchText))
+          (i.n_os && String(i.n_os).toLowerCase().includes(search)) ||
+          (i.cod_os_completo && String(i.cod_os_completo).toLowerCase().includes(search)) ||
+          (i.codigo_interno && String(i.codigo_interno).toLowerCase().includes(search)) ||
+          (i.nome && String(i.nome).toLowerCase().includes(search)) ||
+          (i.titulo && String(i.titulo).toLowerCase().includes(search)) ||
+          (i.cliente && String(i.cliente).toLowerCase().includes(search))
         );
       }
 
       if (osVal) filtered = filtered.filter(i => String(i.n_os) === osVal);
       if (prodVal) filtered = filtered.filter(i => i.codigo_interno === prodVal);
       if (cliVal) filtered = filtered.filter(i => i.cliente === cliVal);
-      if (osProdVal && !osProdContainer.classList.contains('hidden')) {
-        filtered = filtered.filter(i => String(i.cod_solicitacao) === osProdVal);
-      }
 
-      // Contador no topo
-      document.getElementById('kpi-count').textContent = filtered.length;
+      // KPIs
+      document.getElementById('kpiTotalItens').textContent = filtered.length;
+      document.getElementById('kpiQtdSolicitada').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_solicitada) || 0), 0);
+      document.getElementById('kpiQtdDisponivel').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_disponivel) || 0), 0);
+      document.getElementById('kpiQtdProduzindo').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_produzindo) || 0), 0);
 
-      // Header da Tabela
-      document.getElementById('table-header').innerHTML = config.cols.map(col => `
-        <th class="${col.align === 'right' ? 'text-right' : 'text-left'}">${col.label}</th>
+      document.getElementById('totalCount').textContent = filtered.length;
+
+      // Render Table Header
+      document.getElementById('tableHeader').innerHTML = config.cols.map(c => `
+        <th class="${c.align === 'right' ? 'text-right' : 'text-left'}">${c.label}</th>
       `).join('');
 
-      // Linhas da Tabela
-      document.getElementById('table-body').innerHTML = filtered.map(row => `
+      // Render Table Body
+      document.getElementById('tableBody').innerHTML = filtered.map(row => `
         <tr>
-          ${config.cols.map(col => `
-            <td class="${col.align === 'right' ? 'text-right' : 'text-left'}">
-              ${row[col.key] !== null && row[col.key] !== undefined ? row[col.key] : ''}
+          ${config.cols.map(c => `
+            <td class="${c.align === 'right' ? 'text-right font-mono text-amber-400' : 'text-left'}">
+              ${row[c.key] !== null && row[c.key] !== undefined ? row[c.key] : ''}
             </td>
           `).join('')}
         </tr>
       `).join('');
 
-      // Rodapé com Totais
-      document.getElementById('table-footer').innerHTML = config.cols.map((col, idx) => {
-        if (idx === 0) return `<td class="text-amber-400">Total</td>`;
-        if (col.sum) {
-          const sum = filtered.reduce((acc, curr) => acc + (Number(curr[col.key]) || 0), 0);
-          return `<td class="text-right text-amber-400">${sum.toLocaleString('pt-BR')}</td>`;
-        }
-        return `<td></td>`;
-      }).join('');
+      // Footer Sums
+      const sumsContainer = document.getElementById('footerSums');
+      sumsContainer.innerHTML = '';
+      config.cols.filter(c => c.sum).forEach(c => {
+        const total = filtered.reduce((acc, curr) => acc + (Number(curr[c.key]) || 0), 0);
+        sumsContainer.innerHTML += `<span>TOTAL ${c.label.toUpperCase()}: <strong class="text-amber-400">${total}</strong></span>`;
+      });
+
+      lucide.createIcons();
     }
 
-    // Ações de Troca de Aba
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-        btn.classList.add('active-tab');
-        currentTab = btn.getAttribute('data-tab');
-        render();
-      });
-    });
-
-    // Eventos dos Filtros e da Busca em Tempo Real
-    document.getElementById('input-search').addEventListener('input', render);
-    ['filter-os', 'filter-cod-produto', 'filter-cliente', 'filter-os-prod'].forEach(id => {
-      document.getElementById(id).addEventListener('change', render);
-    });
-
-    fetchData();
+    function clearFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterOs').value = '';
+      document.getElementById('filterProduto').value = '';
+      document.getElementById('filterCliente').value = '';
+      render();
+    }
   </script>
 </body>
 </html>
