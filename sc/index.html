@@ -3,11 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sintercan - Controle de Estoque</title>
+  <title>Sintercan - Controle de Estoque V1</title>
+  
+  <!-- Favicon com o LOGO MINIMALISTA -->
+  <link rel="icon" type="image/png" href="../LOGO MINIMALISTA.png" />
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  
   <style>
     body { background-color: #070d1e; color: #f8fafc; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     .bg-rf-header { background-color: #0b1329; }
@@ -37,16 +42,24 @@
 
   <!-- HEADER -->
   <header class="bg-rf-header border-b border-rf sticky top-0 z-50 shadow-md">
-    <div class="max-w-[1700px] mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
-      <div class="flex items-center gap-3">
-        <div class="flex items-center justify-center p-2 bg-amber-500 rounded-xl text-slate-950 font-black">
-          <i data-lucide="cog" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <h1 class="text-base font-black tracking-wider text-white uppercase flex items-center gap-2">
-            CONSULTORIA RF <span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono">V1</span>
-          </h1>
-          <p class="text-xs text-slate-400 font-medium">Sintercan - Controle Semanal de Produção & Peças</p>
+    <div class="max-w-[1700px] mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-4">
+      
+      <!-- LOGO CONSULTORIA RF + LOGO MINIMALISTA -->
+      <div class="flex items-center gap-4">
+        <!-- Logo Principal Consultoria RF -->
+        <img src="../logo.png" alt="Consultoria RF" class="h-10 w-auto object-contain" />
+
+        <div class="h-8 w-[1px] bg-slate-800 hidden sm:block"></div>
+
+        <!-- Logo Minimalista + Título -->
+        <div class="flex items-center gap-2">
+          <img src="../LOGO MINIMALISTA.png" alt="Sintercan Logo" class="w-7 h-7 object-contain" />
+          <div>
+            <h1 class="text-sm font-black tracking-wider text-white uppercase leading-tight">
+              Sintercan
+            </h1>
+            <p class="text-[10px] text-slate-400 font-medium leading-tight">Controle de Estoque & Materiais V1</p>
+          </div>
         </div>
       </div>
 
@@ -183,7 +196,6 @@
     let rawData = [];
     let currentTab = 'estoque';
 
-    // Variáveis Globais de Ordenação (Padrão: cod_os_completo)
     let sortColumn = 'cod_os_completo';
     let sortDirection = 'asc';
 
@@ -306,7 +318,6 @@
       render();
     }
 
-    // Função para alterar ordenação ao clicar na coluna
     function handleSort(key) {
       if (sortColumn === key) {
         sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -321,7 +332,6 @@
       const config = tabConfigs[currentTab];
       let filtered = rawData.filter(config.filter);
 
-      // Filtros do Usuário
       const search = document.getElementById('searchInput').value.toLowerCase().trim();
       const osVal = document.getElementById('filterOs').value;
       const prodVal = document.getElementById('filterProduto').value;
@@ -342,7 +352,6 @@
       if (prodVal) filtered = filtered.filter(i => i.codigo_interno === prodVal);
       if (cliVal) filtered = filtered.filter(i => i.cliente === cliVal);
 
-      // Lógica de Ordenação Dinâmica
       filtered.sort((a, b) => {
         let valA = a[sortColumn] ?? '';
         let valB = b[sortColumn] ?? '';
@@ -359,14 +368,12 @@
         return 0;
       });
 
-      // KPIs
       document.getElementById('kpiTotalItens').textContent = filtered.length;
       document.getElementById('kpiQtdSolicitada').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_solicitada) || 0), 0);
       document.getElementById('kpiQtdDisponivel').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_disponivel) || 0), 0);
       document.getElementById('kpiQtdProduzindo').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_produzindo) || 0), 0);
       document.getElementById('totalCount').textContent = filtered.length;
 
-      // Render Header com os indicadores de ordenação
       document.getElementById('tableHeader').innerHTML = config.cols.map(c => {
         const isSorted = sortColumn === c.key;
         const icon = isSorted ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : '';
@@ -379,7 +386,6 @@
         `;
       }).join('');
 
-      // Render Body
       document.getElementById('tableBody').innerHTML = filtered.map(row => `
         <tr>
           ${config.cols.map(c => `
@@ -390,7 +396,6 @@
         </tr>
       `).join('');
 
-      // Render Footer Sums
       const sumsContainer = document.getElementById('footerSums');
       sumsContainer.innerHTML = '';
       config.cols.filter(c => c.sum).forEach(c => {
