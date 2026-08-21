@@ -18,7 +18,7 @@
     <meta property="og:url" content="https://consultoriarf.net/sintercan/producao/">
     <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V6.5</title>
+    <title>Programação Semanal de Produção Sintercan V6.6</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -49,7 +49,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.5</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.6</span></p>
                 </div>
             </div>
 
@@ -197,7 +197,7 @@
         </div>
     </footer>
 
-    <!-- MODAL DE DETALHES -->
+    <!-- MODAL DE DETALHES DA OS -->
     <div id="osModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-slate-900 text-slate-100 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-800 max-h-[90vh] flex flex-col">
             <div class="bg-slate-950 px-6 py-4 flex justify-between items-center border-b border-slate-800">
@@ -212,9 +212,10 @@
                 <div class="grid grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
                     <div><span class="text-slate-400 block font-semibold">Nº Pedido</span><span id="mPedido" class="font-bold text-slate-200"></span></div>
                     <div><span class="text-slate-400 block font-semibold">Cliente</span><span id="mCliente" class="font-bold text-slate-200"></span></div>
+                    <div><span class="text-slate-400 block font-semibold">CNPJ Cliente</span><span id="mCnpj" class="font-bold text-amber-400 font-mono"></span></div>
                     <div><span class="text-slate-400 block font-semibold">Preço Geral / Valor</span><span id="mPreco" class="font-bold text-emerald-400"></span></div>
                     <div><span class="text-slate-400 block font-semibold">Possui Orçamento</span><span id="mPossuiOrcamento" class="font-bold text-slate-200"></span></div>
-                    <div class="col-span-2 border-t border-slate-800/80 pt-1.5 mt-0.5">
+                    <div class="border-t border-slate-800/80 pt-1.5 mt-0.5">
                         <span class="text-slate-400 block font-semibold">Nº do Orçamento</span>
                         <span id="mNumOrcamento" class="font-bold text-amber-400"></span>
                     </div>
@@ -273,13 +274,66 @@
 
             </div>
 
-            <div class="bg-slate-950 px-5 py-3 border-t border-slate-800 flex justify-between items-center">
-                <button id="btnOpenEditPrazo" onclick="toggleEditPrazo(true)" class="px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-xl font-semibold text-xs hover:bg-amber-500/20 flex items-center gap-1.5 transition">
-                    <i data-lucide="calendar-plus" class="w-4 h-4"></i>
-                    <span>Alterar Data de Entrega</span>
-                </button>
+            <div class="bg-slate-950 px-5 py-3 border-t border-slate-800 flex flex-wrap justify-between items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="btnOpenEditPrazo" onclick="toggleEditPrazo(true)" class="px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-xl font-semibold text-xs hover:bg-amber-500/20 flex items-center gap-1.5 transition">
+                        <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                        <span>Alterar Data de Entrega</span>
+                    </button>
+
+                    <!-- BOTÃO GERAR CÓDIGO DO CLIENTE -->
+                    <button onclick="gerarCodigoClienteAcesso()" class="px-3 py-1.5 bg-amber-500 text-slate-950 rounded-xl font-bold text-xs transition shadow-sm flex items-center gap-1.5 hover:bg-amber-400">
+                        <i data-lucide="key" class="w-4 h-4"></i>
+                        <span>Gerar Acesso Cliente</span>
+                    </button>
+                </div>
 
                 <button onclick="closeModal()" class="px-4 py-1.5 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-700">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL GERAR ACESSO DO CLIENTE -->
+    <div id="clientAccessModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-[80]">
+        <div class="bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 text-xs border border-slate-800 relative text-slate-100">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <div class="flex items-center gap-2 text-white font-extrabold text-sm">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                    <span>Acesso do Cliente Gerado</span>
+                </div>
+                <button onclick="closeClientAccessModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+
+            <div class="space-y-3">
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Cliente</span>
+                    <span id="caClientName" class="font-extrabold text-slate-200 text-xs"></span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase block">CNPJ do Cliente</span>
+                        <span id="caClientCNPJ" class="font-extrabold font-mono text-slate-200 text-xs"></span>
+                    </div>
+
+                    <div class="bg-slate-950 p-3 rounded-xl border border-amber-500/30">
+                        <span class="text-[10px] text-amber-400 font-bold uppercase block">Senha Exclusiva</span>
+                        <span id="caClientCode" class="font-black font-mono text-emerald-400 text-sm tracking-wider"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Mensagem Pronta para WhatsApp</span>
+                    <textarea id="caMessageText" rows="5" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 font-mono text-[10.5px] text-slate-300 focus:outline-none custom-scroll"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeClientAccessModal()" class="px-3.5 py-1.5 bg-slate-800 text-slate-300 rounded-xl font-bold hover:bg-slate-700 transition">Fechar</button>
+                <button onclick="copiarMensagemCliente()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    <span>Copiar Mensagem</span>
+                </button>
             </div>
         </div>
     </div>
@@ -310,6 +364,29 @@
         let onlyWithBudget = true;
         let sortMode = 'date'; // 'date' ou 'client'
         let valuesVisible = hasAccessValores;
+
+        const charMap = {
+            '0': '0',
+            '1': 'I',
+            '2': 'b',
+            '3': 'c',
+            '4': 'd',
+            '5': 'h',
+            '6': 'F',
+            '7': 'g',
+            '8': 'H',
+            '9': 'I'
+        };
+
+        function calculateCustomClientPassword(cnpj) {
+            const clean = String(cnpj || '').replace(/\D/g, '');
+            if (clean.length < 8) return '';
+            
+            const sixDigits = clean.substring(2, 8);
+            const inverted = sixDigits.split('').reverse().join('');
+            
+            return inverted.split('').map(d => charMap[d] || d).join('');
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             if (hasAccessValores) {
@@ -821,10 +898,13 @@
         function openModal(item) {
             currentOSItem = item;
             
+            const safeText = (val) => (!val || val === 'NaT' || val === 'None' || val === 'null' || String(val).trim() === '') ? '-' : val;
+
             document.getElementById('mOS').textContent = `OS #${item.n_os}`;
             document.getElementById('mTitulo').textContent = getFullTitle(item);
             document.getElementById('mPedido').textContent = item.n_pedido || 'Não informado';
             document.getElementById('mCliente').textContent = item.cliente || 'Não informado';
+            document.getElementById('mCnpj').textContent = safeText(item.cnpj);
             document.getElementById('mPreco').textContent = formatBRL(item.preco_geral_a_vista);
             document.getElementById('mPossuiOrcamento').textContent = item.possui_orcamento || '-';
             
@@ -852,6 +932,48 @@
             const modal = document.getElementById('osModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function gerarCodigoClienteAcesso() {
+            if (!currentOSItem) return;
+
+            const cnpjRaw = String(currentOSItem.cnpj || '').replace(/\D/g, '');
+            if (!cnpjRaw || cnpjRaw.length < 8) {
+                alert('Esta OS não possui um CNPJ de cliente válido cadastrado.');
+                return;
+            }
+
+            const clientCode = calculateCustomClientPassword(cnpjRaw);
+            const cnpjFormatted = currentOSItem.cnpj;
+            
+            // Link direto com Login Automático apontado para a Sintercan
+            const directLink = `https://consultoriarf.net/sintercan/clientes.html?cnpj=${encodeURIComponent(cnpjFormatted)}&code=${clientCode}`;
+
+            const mensagemPronta = `Prezado(a) Cliente,\n\nAcompanhe o status e a evolução da produção dos seus pedidos em tempo real no nosso portal:\n\n🔗 *Acesse o Portal (Login Automático):*\n${directLink}\n\n---\nCaso prefira acessar manualmente:\n🏢 *CNPJ:* ${cnpjFormatted}\n🔑 *Senha:* ${clientCode}\n\nQualquer dúvida, estamos à disposição!\n*SINTERCAN*`;
+
+            document.getElementById('caClientName').textContent = currentOSItem.cliente || currentOSItem.empresa || 'Cliente';
+            document.getElementById('caClientCNPJ').textContent = cnpjFormatted;
+            document.getElementById('caClientCode').textContent = clientCode;
+            document.getElementById('caMessageText').value = mensagemPronta;
+
+            const modal = document.getElementById('clientAccessModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeClientAccessModal() {
+            const modal = document.getElementById('clientAccessModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function copiarMensagemCliente() {
+            const textEl = document.getElementById('caMessageText');
+            textEl.select();
+            navigator.clipboard.writeText(textEl.value);
+            alert('Mensagem copiada para a área de transferência! Pronta para colar no WhatsApp.');
         }
 
         function toggleEditPrazo(show) {
