@@ -3,74 +3,633 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Faturamento - Sintercan</title>
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../LOGO MINIMALISTA.png">
+    <link rel="apple-touch-icon" href="../LOGO MINIMALISTA.png">
+
+    <!-- Meta Tags -->
+    <meta property="og:title" content="Controle de Faturamento | Consultoria RF">
+    <meta property="og:description" content="Dashboard de acompanhamento e previsão de faturamento.">
+    <meta property="og:image" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/LOGO MINIMALISTA.png">
+    <meta property="og:type" content="website">
+    
+    <title>Sintercan - Controle de Faturamento V1.0</title>
+
+    <!-- VALIDAÇÃO DE AUTENTICAÇÃO E PERMISSÃO ANTES DE RENDERIZAR A PÁGINA -->
+    <script>
+        const sessionData = localStorage.getItem('sintercan_user');
+        if (!sessionData) {
+            window.location.href = '../';
+        } else {
+            const currentUser = JSON.parse(sessionData);
+            // Verifica permissão de faturamento ou admin
+            if (Number(currentUser.u_faturamento) !== 1 && Number(currentUser.u_admin) !== 1) {
+                alert("Acesso negado para o módulo de Faturamento.");
+                window.location.href = '../';
+            }
+        }
+    </script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
         body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
 
     <!-- HEADER -->
     <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            
+            <!-- Título & Logo -->
             <div class="flex items-center gap-4">
                 <a href="../" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700 flex items-center justify-center" title="Voltar ao Menu">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
                 </a>
                 <div class="flex items-center justify-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 shadow-inner">
                     <img src="../logo.png" alt="Logo" class="h-10 max-h-12 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div class="hidden p-2 bg-amber-500 rounded-xl text-slate-950 font-bold items-center justify-center">
+                    <div class="hidden p-2 bg-blue-500 rounded-xl text-slate-950 font-bold items-center justify-center">
                         <i data-lucide="receipt" class="w-6 h-6"></i>
                     </div>
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Módulo de Faturamento</p>
+                    <p class="text-xs text-slate-400">Controle de Faturamento <span class="text-blue-400 font-mono">V1.0</span></p>
                 </div>
+            </div>
+
+            <!-- NAVEGADOR DE MÊS -->
+            <div class="flex items-center bg-slate-900/90 border border-slate-700/80 rounded-2xl px-2 py-1.5 shadow-md">
+                <button onclick="changeMonth(-1)" class="p-1.5 hover:bg-slate-800 rounded-xl text-slate-300 hover:text-white transition">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                
+                <div class="flex items-center gap-2 px-3">
+                    <i data-lucide="calendar" class="w-5 h-5 text-blue-400"></i>
+                    <span id="currentMonthYearLabel" class="font-bold text-sm text-white capitalize tracking-wide min-w-[130px] text-center">
+                        Carregando...
+                    </span>
+                </div>
+
+                <button onclick="changeMonth(1)" class="p-1.5 hover:bg-slate-800 rounded-xl text-slate-300 hover:text-white transition">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
+
+                <button onclick="resetToToday()" class="ml-2 px-3 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-white transition">
+                    Hoje
+                </button>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="flex items-center gap-2">
+                <button onclick="exportToExcel()" class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs transition-all shadow cursor-pointer">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                    Exportar Excel
+                </button>
+
+                <button id="btnRefresh" onclick="fetchData()" class="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-all shadow cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
+                    Atualizar Dados
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- CONTEÚDO PRINCIPAL (EM BREVE) -->
-    <main class="max-w-7xl w-full mx-auto p-4 flex-1 flex items-center justify-center">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center max-w-lg shadow-2xl space-y-4">
-            <div class="w-16 h-16 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 flex items-center justify-center mx-auto">
-                <i data-lucide="clock" class="w-8 h-8"></i>
+    <!-- METRICS BAR -->
+    <div class="bg-slate-900/60 border-b border-slate-800 text-white shadow-inner">
+        <div class="max-w-7xl mx-auto px-4 py-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Total Faturado</span>
+                <span id="metricTotalFaturado" class="text-xl font-extrabold text-emerald-400">R$ 0,00</span>
             </div>
-            <h2 class="text-2xl font-black text-white">Módulo em Desenvolvimento</h2>
-            <p class="text-sm text-slate-400">
-                O módulo de <strong class="text-amber-400">Faturamento</strong> está em fase de construção e em breve estará disponível para consumo de dados.
-            </p>
-            <div class="pt-4">
-                <a href="../" class="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-xl transition">
-                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar ao Menu
-                </a>
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">A Faturar</span>
+                <span id="metricAFaturar" class="text-xl font-extrabold text-blue-400">R$ 0,00</span>
             </div>
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Total Geral Previsto</span>
+                <span id="metricTotalGeral" class="text-xl font-extrabold text-amber-400">R$ 0,00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTROLES E FILTROS -->
+    <main class="max-w-7xl w-full mx-auto p-4 flex flex-col gap-4 flex-1">
+        
+        <div class="bg-slate-900 p-3 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            
+            <!-- Busca Geral -->
+            <div class="flex items-center gap-2 flex-1 min-w-[200px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                <input type="text" id="searchInput" oninput="renderCalendar()" placeholder="Pesquisar (OS, Orçamento, Cliente, Descrição, NF...)" 
+                       class="w-full text-xs bg-transparent text-white focus:outline-none placeholder-slate-500">
+            </div>
+
+            <!-- Filtro por Cliente -->
+            <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+                <select id="clientFilter" onchange="renderCalendar()" class="text-xs bg-transparent text-white focus:outline-none cursor-pointer max-w-[180px]">
+                    <option value="" class="bg-slate-900">Todos os Clientes</option>
+                </select>
+            </div>
+
+            <!-- Botão Limpar Filtros -->
+            <button onclick="clearAllFilters()" title="Limpar todos os filtros" class="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                <i data-lucide="filter-x" class="w-3.5 h-3.5 text-red-400"></i>
+                <span>Limpar Filtros</span>
+            </button>
+        </div>
+
+        <!-- CONTEÚDO PRINCIPAL DAS SEMANAS -->
+        <div id="faturamentoGrid" class="space-y-4">
+            <!-- As tabelas de faturamento serão geradas aqui -->
         </div>
     </main>
 
-    <script>
-        // VALIDAÇÃO DE SESSÃO E PERMISSÃO DE ACESSO
-        const sessionData = localStorage.getItem('sintercan_user');
-        if (!sessionData) {
-            window.location.href = '../';
-        }
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div class="flex items-center gap-2">
+                <i data-lucide="code-2" class="w-4 h-4 text-blue-500"></i>
+                <span>© 2026 Sistema de Gestão de Faturamento Sintercan</span>
+            </div>
+        </div>
+    </footer>
 
-        const currentUser = JSON.parse(sessionData);
-        if (Number(currentUser.u_faturamento) !== 1) {
-            alert("Acesso negado para este módulo.");
-            window.location.href = '../';
-        }
+    <!-- MODAL DE ALTERAÇÃO DA DATA PREVISTO/PERMITIDO PARA FATURAR -->
+    <div id="editModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 text-slate-100 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-800">
+            <div class="bg-slate-950 px-6 py-4 flex justify-between items-center border-b border-slate-800">
+                <div>
+                    <span id="mModalOS" class="text-xs font-bold bg-blue-500 text-slate-950 px-2 py-0.5 rounded uppercase"></span>
+                    <h3 id="mModalTitle" class="font-bold text-sm mt-1 text-white truncate max-w-[280px]"></h3>
+                </div>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-white p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="p-5 space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Dt previsto/permitido para faturar:</label>
+                    <input type="date" id="inputNewDate" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500 font-semibold">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Justificativa da Alteração <span class="text-red-400">*</span>:</label>
+                    <textarea id="inputJustification" rows="3" placeholder="Digite o motivo da alteração (obrigatório)..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500 font-medium placeholder-slate-600 custom-scroll"></textarea>
+                </div>
+            </div>
+
+            <div class="bg-slate-950 px-5 py-3 border-t border-slate-800 flex justify-end gap-2">
+                <button onclick="closeEditModal()" class="px-4 py-1.5 bg-slate-800 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 transition">Cancelar</button>
+                <button id="btnSaveData" onclick="saveRenegociacao()" class="px-4 py-1.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition shadow flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-4 h-4"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        const API_URL = 'https://sintercan.consultoriarf.net/faturamento';
+        const API_PATCH_URL = 'https://sintercan.consultoriarf.net/faturamento';
+
+        let rawData = [];
+        let currentDate = new Date();
+        let selectedItemModal = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            fetchData();
         });
+
+        async function fetchData() {
+            const icon = document.getElementById('refreshIcon');
+            if (icon) icon.classList.add('animate-spin');
+
+            try {
+                // Bypass de cache com timestamp
+                const response = await fetch(`${API_URL}?_t=${Date.now()}`, {
+                    method: 'GET',
+                    headers: { 'ngrok-skip-browser-warning': '69420' },
+                    cache: 'no-store'
+                });
+
+                if (!response.ok) throw new Error(`Status HTTP: ${response.status}`);
+                
+                const data = await response.json();
+                rawData = Array.isArray(data) ? data : [data];
+                
+                populateDropdowns();
+                renderCalendar();
+            } catch (err) {
+                console.error("Erro ao buscar faturamento:", err);
+                alert("Erro de conexão com o servidor de faturamento!");
+            } finally {
+                if (icon) icon.classList.remove('animate-spin');
+            }
+        }
+
+        function populateDropdowns() {
+            const clientSelect = document.getElementById('clientFilter');
+            const currentClient = clientSelect.value;
+
+            clientSelect.innerHTML = '<option value="" class="bg-slate-900">Todos os Clientes</option>';
+            const clients = new Set();
+
+            rawData.forEach(item => {
+                if (item.cliente && item.cliente.trim() !== "") clients.add(item.cliente.trim());
+            });
+
+            Array.from(clients).sort().forEach(val => {
+                clientSelect.appendChild(new Option(val, val, false, false)).className = 'bg-slate-900';
+            });
+
+            clientSelect.value = currentClient;
+        }
+
+        function clearAllFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clientFilter').value = '';
+            renderCalendar();
+        }
+
+        function changeMonth(delta) {
+            currentDate.setMonth(currentDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function resetToToday() {
+            currentDate = new Date();
+            renderCalendar();
+        }
+
+        function parseValue(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            let str = val.toString().replace(/[^\d,-]/g, '').replace(',', '.');
+            return parseFloat(str) || 0;
+        }
+
+        function formatBRL(val) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseValue(val));
+        }
+
+        function formatDateOnly(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '-';
+            return d.toLocaleDateString('pt-BR');
+        }
+
+        function getISOWeekNumber(itemDate) {
+            const year = itemDate.getFullYear();
+            const month = itemDate.getMonth();
+
+            const d = new Date(Date.UTC(year, month, itemDate.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function getWeekDateRangeStr(itemDate) {
+            const monday = new Date(itemDate);
+            monday.setDate(itemDate.getDate() - (itemDate.getDay() === 0 ? 6 : itemDate.getDay() - 1));
+            
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+
+            const formatShort = (dt) => `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`;
+            return `${formatShort(monday)} A ${formatShort(sunday)}`;
+        }
+
+        function renderCalendar() {
+            const monthStr = currentDate.toLocaleDateString('pt-BR', { month: 'long' });
+            const capitalizedMonth = monthStr.charAt(0).toUpperCase() + monthStr.slice(1);
+            document.getElementById('currentMonthYearLabel').textContent = `${capitalizedMonth} De ${currentDate.getFullYear()}`;
+
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const selectedClient = document.getElementById('clientFilter').value;
+
+            const selectedYear = currentDate.getFullYear();
+            const selectedMonth = currentDate.getMonth();
+
+            // Filtragem por mês e filtros de busca
+            let filtered = rawData.filter(item => {
+                const fat = parseValue(item.vl_faturado);
+                const temNF = item.numero_nf && String(item.numero_nf).trim() !== '' && String(item.numero_nf) !== 'None';
+                const isFaturado = fat > 0 || temNF;
+
+                let dtRefStr = isFaturado ? (item.dt_emissao || item.entrega_normalizada) : (item.entrega_normalizada || item.dt_previsao_entrega);
+                if (!dtRefStr) return false;
+
+                const date = new Date(dtRefStr);
+                if (isNaN(date)) return false;
+
+                if (date.getMonth() !== selectedMonth || date.getFullYear() !== selectedYear) return false;
+
+                if (selectedClient && item.cliente !== selectedClient) return false;
+
+                if (search) {
+                    const allValuesText = Object.values(item).filter(v => v !== null && v !== undefined).join(' ').toLowerCase();
+                    if (!allValuesText.includes(search)) return false;
+                }
+
+                return true;
+            });
+
+            // Cálculo das métricas topo
+            let totalFaturado = 0;
+            let totalAFaturar = 0;
+
+            filtered.forEach(item => {
+                const fat = parseValue(item.vl_faturado);
+                const aFat = parseValue(item.vl_a_faturar);
+                totalFaturado += fat;
+                totalAFaturar += aFat;
+            });
+
+            document.getElementById('metricTotalFaturado').textContent = formatBRL(totalFaturado);
+            document.getElementById('metricAFaturar').textContent = formatBRL(totalAFaturar);
+            document.getElementById('metricTotalGeral').textContent = formatBRL(totalFaturado + totalAFaturar);
+
+            // Agrupamento por Semanas
+            const weeksMap = {};
+            filtered.forEach(item => {
+                const fat = parseValue(item.vl_faturado);
+                const temNF = item.numero_nf && String(item.numero_nf).trim() !== '' && String(item.numero_nf) !== 'None';
+                const isFaturado = fat > 0 || temNF;
+
+                let dtRefStr = isFaturado ? (item.dt_emissao || item.entrega_normalizada) : (item.entrega_normalizada || item.dt_previsao_entrega);
+                const date = new Date(dtRefStr);
+
+                const weekNo = getISOWeekNumber(date);
+                const rangeStr = getWeekDateRangeStr(date);
+                const groupKey = `W${weekNo}`;
+
+                if (!weeksMap[groupKey]) {
+                    weeksMap[groupKey] = {
+                        weekNum: weekNo,
+                        label: `SEMANA ${weekNo} (${rangeStr})`,
+                        items: []
+                    };
+                }
+                weeksMap[groupKey].items.push(item);
+            });
+
+            const sortedWeeks = Object.values(weeksMap).sort((a, b) => a.weekNum - b.weekNum);
+            const grid = document.getElementById('faturamentoGrid');
+            grid.innerHTML = '';
+
+            if (sortedWeeks.length === 0) {
+                grid.innerHTML = `
+                    <div class="bg-slate-900 p-8 text-center rounded-2xl border border-slate-800 text-slate-400">
+                        <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        Nenhum registro de faturamento encontrado para este mês.
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            sortedWeeks.forEach(week => {
+                const weekTotal = week.items.reduce((acc, i) => acc + parseValue(i.vl_faturado || i.vl_a_faturar), 0);
+
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm';
+
+                card.innerHTML = `
+                    <div class="bg-blue-600 text-slate-950 px-4 py-2.5 font-black text-xs flex justify-between items-center border-b border-blue-700">
+                        <span>${week.label}</span>
+                        <span class="bg-slate-950 text-white px-2.5 py-0.5 rounded-full text-[10px] font-mono font-normal">${week.items.length} Itens</span>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scroll">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950 text-slate-400 font-bold border-b border-slate-800 uppercase text-[10px]">
+                                    <th class="p-3">Orçamento</th>
+                                    <th class="p-3">Cliente</th>
+                                    <th class="p-3">Cód. Interno</th>
+                                    <th class="p-3">OS</th>
+                                    <th class="p-3">Descrição</th>
+                                    <th class="p-3 text-center">Dt Prev. Entrega</th>
+                                    <th class="p-3 text-center">Status / NF</th>
+                                    <th class="p-3 text-center">Dt Previsto/Permitido Faturar</th>
+                                    <th class="p-3 text-right">Valor</th>
+                                    <th class="p-3 text-center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 font-medium">
+                                ${week.items.map(item => {
+                                    const fat = parseValue(item.vl_faturado);
+                                    const temNF = item.numero_nf && String(item.numero_nf).trim() !== '' && String(item.numero_nf) !== 'None';
+                                    const isFaturado = fat > 0 || temNF;
+                                    const valorExibir = isFaturado ? fat : parseValue(item.vl_a_faturar);
+
+                                    const payload = JSON.stringify(item).replace(/'/g, "&apos;");
+
+                                    return `
+                                        <tr class="${isFaturado ? 'bg-emerald-950/20 hover:bg-emerald-900/30' : 'hover:bg-slate-800/40'} transition">
+                                            <td class="p-3 font-bold font-mono text-amber-400">${item.n_orcamento || '-'}</td>
+                                            <td class="p-3 font-bold text-slate-200 truncate max-w-[150px]">${item.cliente || '-'}</td>
+                                            <td class="p-3 font-mono text-slate-400">${item.cod_interno || '-'}</td>
+                                            <td class="p-3 font-mono font-bold text-blue-400">OS ${item.n_os || '-'}</td>
+                                            <td class="p-3 text-slate-300 truncate max-w-[200px]" title="${item.descricao || ''}">${item.descricao || '-'}</td>
+                                            <td class="p-3 text-center font-medium text-slate-400">${formatDateOnly(item.dt_previsao_entrega)}</td>
+                                            <td class="p-3 text-center">
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${isFaturado ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">
+                                                    ${isFaturado ? (item.numero_nf ? `FATURADO (NF ${item.numero_nf})` : 'FATURADO') : 'PENDENTE'}
+                                                </span>
+                                            </td>
+                                            <td class="p-3 text-center font-bold ${isFaturado ? 'text-emerald-400' : 'text-blue-400'}">${formatDateOnly(item.entrega_normalizada || item.dt_prevista_fat)}</td>
+                                            <td class="p-3 text-right font-mono font-bold ${isFaturado ? 'text-emerald-400' : 'text-slate-200'}">${formatBRL(valorExibir)}</td>
+                                            <td class="p-3 text-center">
+                                                <button onclick='openEditModal(${payload})' class="p-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/20 transition flex items-center justify-center gap-1 mx-auto font-bold text-[10px]">
+                                                    <i data-lucide="calendar-cog" class="w-3.5 h-3.5"></i>
+                                                    <span>Renegociar</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        // FUNÇÕES DO MODAL DE ALTERAÇÃO DA DATA
+        function openEditModal(item) {
+            selectedItemModal = item;
+
+            document.getElementById('mModalOS').textContent = `OS #${item.n_os}`;
+            document.getElementById('mModalTitle').textContent = item.descricao || item.cliente || '';
+
+            const inputDate = document.getElementById('inputNewDate');
+            const dtAtual = item.entrega_normalizada || item.dt_prevista_fat || '';
+            if (dtAtual && dtAtual.length >= 10) {
+                inputDate.value = dtAtual.substring(0, 10);
+            } else {
+                inputDate.value = '';
+            }
+
+            document.getElementById('inputJustification').value = '';
+
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            selectedItemModal = null;
+        }
+
+        async function saveRenegociacao() {
+            if (!selectedItemModal) return;
+
+            const newDate = document.getElementById('inputNewDate').value;
+            const userTexto = document.getElementById('inputJustification').value.trim();
+
+            if (!userTexto) {
+                alert('A justificativa é obrigatória para registrar a alteração.');
+                return;
+            }
+
+            // Pega o nome do usuário logado na sessão ou coloca 'SISTEMA' se não encontrar
+            const sessionUser = localStorage.getItem('sintercan_user');
+            let usuarioLogado = 'SISTEMA';
+            if (sessionUser) {
+                try {
+                    const uObj = JSON.parse(sessionUser);
+                    usuarioLogado = uObj.nome || uObj.usuario || 'SISTEMA';
+                } catch(e) {}
+            }
+
+            const justificativaComUsuario = `[${usuarioLogado.toUpperCase()}] ${userTexto}`;
+
+            const btnSave = document.getElementById('btnSaveData');
+            btnSave.disabled = true;
+            btnSave.innerHTML = 'Salvando...';
+
+            try {
+                const response = await fetch(`${API_PATCH_URL}/${selectedItemModal.n_os}/alterar-renegociacao`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': '69420'
+                    },
+                    body: JSON.stringify({
+                        u_data_renegociacao: newDate || null,
+                        U_JUST_ALT_DT_REN: justificativaComUsuario
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || 'Falha ao salvar renegociação.');
+                }
+
+                alert('Data e justificativa atualizadas com sucesso!');
+                closeEditModal();
+                fetchData();
+
+            } catch (err) {
+                console.error(err);
+                alert(`Erro: ${err.message}`);
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Salvar';
+                lucide.createIcons();
+            }
+        }
+
+        // EXPORTAÇÃO EXCEL NATIVA DA TELA
+        function exportToExcel() {
+            if (rawData.length === 0) {
+                alert('Não há dados para exportar.');
+                return;
+            }
+
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const selectedClient = document.getElementById('clientFilter').value;
+            const selectedYear = currentDate.getFullYear();
+            const selectedMonth = currentDate.getMonth();
+
+            let items = rawData.filter(item => {
+                const fat = parseValue(item.vl_faturado);
+                const temNF = item.numero_nf && String(item.numero_nf).trim() !== '' && String(item.numero_nf) !== 'None';
+                const isFaturado = fat > 0 || temNF;
+
+                let dtRefStr = isFaturado ? (item.dt_emissao || item.entrega_normalizada) : (item.entrega_normalizada || item.dt_previsao_entrega);
+                if (!dtRefStr) return false;
+
+                const date = new Date(dtRefStr);
+                if (date.getMonth() !== selectedMonth || date.getFullYear() !== selectedYear) return false;
+                if (selectedClient && item.cliente !== selectedClient) return false;
+
+                if (search) {
+                    const allValuesText = Object.values(item).filter(v => v !== null && v !== undefined).join(' ').toLowerCase();
+                    if (!allValuesText.includes(search)) return false;
+                }
+
+                return true;
+            });
+
+            if (items.length === 0) {
+                alert('Nenhum registro encontrado para exportar com os filtros atuais.');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "Orçamento;Cliente;Cod. Interno;OS;Descrição;Qtd;Dt Prev. Entrega;Status;NF;Dt Previsto/Permitido Faturar;Valor\n";
+
+            items.forEach(item => {
+                const fat = parseValue(item.vl_faturado);
+                const temNF = item.numero_nf && String(item.numero_nf).trim() !== '' && String(item.numero_nf) !== 'None';
+                const isFaturado = fat > 0 || temNF;
+                const valorExibir = isFaturado ? fat : parseValue(item.vl_a_faturar);
+
+                const row = [
+                    `"${item.n_orcamento || ''}"`,
+                    `"${item.cliente || ''}"`,
+                    `"${item.cod_interno || ''}"`,
+                    `"${item.n_os || ''}"`,
+                    `"${(item.descricao || '').replace(/"/g, '""')}"`,
+                    item.qtde || 0,
+                    `"${formatDateOnly(item.dt_previsao_entrega)}"`,
+                    `"${isFaturado ? 'FATURADO' : 'PENDENTE'}"`,
+                    `"${item.numero_nf || ''}"`,
+                    `"${formatDateOnly(item.entrega_normalizada || item.dt_prevista_fat)}"`,
+                    valorExibir.toFixed(2).replace('.', ',')
+                ];
+
+                csvContent += row.join(";") + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Faturamento_Sintercan_${selectedYear}_${String(selectedMonth + 1).padStart(2, '0')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     </script>
 </body>
 </html>
