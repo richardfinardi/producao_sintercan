@@ -18,7 +18,7 @@
     <meta property="og:url" content="https://consultoriarf.net/sintercan/producao/">
     <meta property="og:type" content="website">
     
-    <title>Programação Semanal de Produção Sintercan V6.6</title>
+    <title>Programação Semanal de Produção Sintercan V6.7</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -49,7 +49,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.6</span></p>
+                    <p class="text-xs text-slate-400">Controle Semanal de Produção <span class="text-amber-400 font-mono">V6.7</span></p>
                 </div>
             </div>
 
@@ -947,8 +947,8 @@
             const clientCode = calculateCustomClientPassword(cnpjRaw);
             const cnpjFormatted = currentOSItem.cnpj;
             
-            // Link direto com Login Automático apontado para a Sintercan
-            const directLink = `https://consultoriarf.net/sintercan/clientes.html?cnpj=${encodeURIComponent(cnpjFormatted)}&code=${clientCode}`;
+            // Link corrigido apontando para a pasta /clientes/
+            const directLink = `https://consultoriarf.net/sintercan/clientes/?cnpj=${encodeURIComponent(cnpjFormatted)}&code=${clientCode}`;
 
             const mensagemPronta = `Prezado(a) Cliente,\n\nAcompanhe o status e a evolução da produção dos seus pedidos em tempo real no nosso portal:\n\n🔗 *Acesse o Portal (Login Automático):*\n${directLink}\n\n---\nCaso prefira acessar manualmente:\n🏢 *CNPJ:* ${cnpjFormatted}\n🔑 *Senha:* ${clientCode}\n\nQualquer dúvida, estamos à disposição!\n*SINTERCAN*`;
 
