@@ -116,7 +116,7 @@
 
         <!-- CARDS RESUMO DO CLIENTE -->
         <div class="bg-slate-900/60 border-b border-slate-800 py-4 shadow-inner">
-            <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div class="bg-slate-900 p-3 rounded-2xl border border-slate-800">
                     <span class="text-[10px] text-slate-400 font-extrabold uppercase block">Ordens de Serviço</span>
                     <span id="kpiTotalOS" class="text-xl font-black text-amber-400">0</span>
@@ -133,6 +133,10 @@
                     <span class="text-[10px] text-slate-400 font-extrabold uppercase block">Progresso Médio Geral</span>
                     <span id="kpiProgressoMedio" class="text-xl font-black text-emerald-400">0%</span>
                 </div>
+                <div class="bg-slate-900 p-3 rounded-2xl border border-slate-800 col-span-2 md:col-span-1">
+                    <span class="text-[10px] text-slate-400 font-extrabold uppercase block">Valor Total Previsto</span>
+                    <span id="kpiValorTotal" class="text-xl font-black text-emerald-400 font-mono">R$ 0,00</span>
+                </div>
             </div>
         </div>
 
@@ -142,7 +146,7 @@
                 <!-- Busca Universal -->
                 <div class="flex items-center gap-2 flex-1 min-w-[200px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
                     <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
-                    <input type="text" id="clientSearch" oninput="renderClientOrders()" placeholder="Pesquisar pedido por título, código ou número de OS..." class="w-full bg-transparent text-white focus:outline-none font-medium placeholder-slate-500">
+                    <input type="text" id="clientSearch" oninput="renderClientOrders()" placeholder="Pesquisar pedido por título, código SC ou número de OS..." class="w-full bg-transparent text-white focus:outline-none font-medium placeholder-slate-500">
                 </div>
 
                 <!-- Filtro por Status -->
@@ -283,7 +287,6 @@
                 const data = await response.json();
                 rawData = Array.isArray(data) ? data : [data];
 
-                // CORREÇÃO CRÍTICA: COMPARA O CNPJ COMPLETO (EX: 14 DÍGITOS DA FILIAL DEDICADA)
                 const clientItems = rawData.filter(item => {
                     const cnpjItem = cleanCNPJ(item.cnpj);
                     return cnpjItem === cleanInput;
@@ -350,14 +353,12 @@
                 const data = await response.json();
                 rawData = Array.isArray(data) ? data : [data];
 
-                // FILTRAGEM PELO CNPJ EXATO DA FILIAL LOGADA
                 authenticatedClientItems = rawData.filter(item => {
                     const cnpjItem = cleanCNPJ(item.cnpj);
                     return cnpjItem === authenticatedCNPJ;
                 });
 
                 if (authenticatedClientItems.length > 0) {
-                    // Tenta encontrar o primeiro item que contenha nome do cliente
                     const sample = authenticatedClientItems.find(i => i.cliente && i.cliente.trim() !== '') || authenticatedClientItems[0];
                     const nomeCliente = sample.cliente || sample.empresa || 'CLIENTE';
                     
@@ -423,10 +424,9 @@
                 if (search) {
                     const mOS = String(item.n_os || '').toLowerCase().includes(search);
                     const mTitulo = String(item.titulo || '').toLowerCase().includes(search);
-                    const mCod = String(item.cod_interno || '').toLowerCase().includes(search);
+                    const mCod = String(item.sc || '').toLowerCase().includes(search);
                     const mPed = String(item.n_pedido || '').toLowerCase().includes(search);
-                    const mOrc = String(item.orcamento || '').toLowerCase().includes(search);
-                    if (!mOS && !mTitulo && !mCod && !mPed && !mOrc) return false;
+                    if (!mOS && !mTitulo && !mCod && !mPed) return false;
                 }
 
                 return true;
@@ -462,11 +462,13 @@
             const progressoMedio = totalOS > 0 
                 ? Math.round(filtered.reduce((acc, i) => acc + parsePercent(i.status_producao), 0) / totalOS) 
                 : 0;
+            const valorTotal = filtered.reduce((acc, i) => acc + parseValue(i.preco_geral_a_vista), 0);
 
             document.getElementById('kpiTotalOS').textContent = totalOS;
             document.getElementById('kpiEmAndamento').textContent = emAndamento;
             document.getElementById('kpiFinalizados').textContent = finalizados;
             document.getElementById('kpiProgressoMedio').textContent = `${progressoMedio}%`;
+            document.getElementById('kpiValorTotal').textContent = formatBRL(valorTotal);
 
             const grid = document.getElementById('ordersGrid');
             const emptyState = document.getElementById('emptyClientState');
@@ -517,10 +519,9 @@
                                 ${item.titulo || 'Sem descrição'}
                             </h3>
 
-                            <div class="grid grid-cols-2 gap-1.5 bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[10px] font-mono">
-                                <div><span class="text-slate-500 block font-sans text-[9px]">Cód. Item:</span><strong class="text-slate-300">${item.cod_interno || '-'}</strong></div>
+                            <div class="grid grid-cols-3 gap-1.5 bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[10px] font-mono">
+                                <div><span class="text-slate-500 block font-sans text-[9px]">Cód. Item:</span><strong class="text-slate-300">${item.sc || '-'}</strong></div>
                                 <div><span class="text-slate-500 block font-sans text-[9px]">Nº Pedido:</span><strong class="text-slate-300">${item.n_pedido || '-'}</strong></div>
-                                <div><span class="text-slate-500 block font-sans text-[9px]">Orçamento:</span><strong class="text-amber-400">${item.orcamento || '-'}</strong></div>
                                 <div><span class="text-slate-500 block font-sans text-[9px]">Qtde Pendente:</span><strong class="text-amber-400 font-extrabold">${qtdeRestante}</strong></div>
                             </div>
                         </div>
