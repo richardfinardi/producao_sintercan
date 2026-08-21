@@ -14,7 +14,7 @@
     <meta property="og:image" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/LOGO MINIMALISTA.png">
     <meta property="og:type" content="website">
     
-    <title>Sintercan - Controle de Faturamento V1.0</title>
+    <title>Sintercan - Controle de Faturamento V1.2</title>
 
     <!-- VALIDAÇÃO DE AUTENTICAÇÃO E PERMISSÃO ANTES DE RENDERIZAR A PÁGINA -->
     <script>
@@ -23,7 +23,6 @@
             window.location.href = '../';
         } else {
             const currentUser = JSON.parse(sessionData);
-            // Verifica permissão de faturamento ou admin
             if (Number(currentUser.u_faturamento) !== 1 && Number(currentUser.u_admin) !== 1) {
                 alert("Acesso negado para o módulo de Faturamento.");
                 window.location.href = '../';
@@ -62,7 +61,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wide text-white">Sintercan</h1>
-                    <p class="text-xs text-slate-400">Controle de Faturamento <span class="text-blue-400 font-mono">V1.0</span></p>
+                    <p class="text-xs text-slate-400">Controle de Faturamento <span class="text-blue-400 font-mono">V1.2</span></p>
                 </div>
             </div>
 
@@ -322,13 +321,22 @@
             const selectedYear = currentDate.getFullYear();
             const selectedMonth = currentDate.getMonth();
 
-            // Filtragem por mês e filtros de busca
+            const now = new Date();
+            const isMesPassado = (selectedYear < now.getFullYear()) || (selectedYear === now.getFullYear() && selectedMonth < now.getMonth());
+
+            // Filtragem utilizando exclusivamente a entrega_normalizada
             let filtered = rawData.filter(item => {
                 const fat = parseValue(item.vl_faturado);
                 const temNF = item.numero_nf && String(item.numero_nf).trim() !== '' && String(item.numero_nf) !== 'None';
                 const isFaturado = fat > 0 || temNF;
 
-                let dtRefStr = isFaturado ? (item.dt_emissao || item.entrega_normalizada) : (item.entrega_normalizada || item.dt_previsao_entrega);
+                // Se for mês histórico/passado, oculta os não faturados
+                if (isMesPassado && !isFaturado) {
+                    return false;
+                }
+
+                // USO EXCLUSIVO DA ENTREGA NORMALIZADA PARA TUDO
+                const dtRefStr = item.entrega_normalizada;
                 if (!dtRefStr) return false;
 
                 const date = new Date(dtRefStr);
@@ -353,23 +361,21 @@
             filtered.forEach(item => {
                 const fat = parseValue(item.vl_faturado);
                 const aFat = parseValue(item.vl_a_faturar);
+                
                 totalFaturado += fat;
-                totalAFaturar += aFat;
+                if (!isMesPassado) {
+                    totalAFaturar += aFat;
+                }
             });
 
             document.getElementById('metricTotalFaturado').textContent = formatBRL(totalFaturado);
             document.getElementById('metricAFaturar').textContent = formatBRL(totalAFaturar);
             document.getElementById('metricTotalGeral').textContent = formatBRL(totalFaturado + totalAFaturar);
 
-            // Agrupamento por Semanas
+            // Agrupamento por Semanas via entrega_normalizada
             const weeksMap = {};
             filtered.forEach(item => {
-                const fat = parseValue(item.vl_faturado);
-                const temNF = item.numero_nf && String(item.numero_nf).trim() !== '' && String(item.numero_nf) !== 'None';
-                const isFaturado = fat > 0 || temNF;
-
-                let dtRefStr = isFaturado ? (item.dt_emissao || item.entrega_normalizada) : (item.entrega_normalizada || item.dt_previsao_entrega);
-                const date = new Date(dtRefStr);
+                const date = new Date(item.entrega_normalizada);
 
                 const weekNo = getISOWeekNumber(date);
                 const rangeStr = getWeekDateRangeStr(date);
@@ -401,7 +407,10 @@
             }
 
             sortedWeeks.forEach(week => {
-                const weekTotal = week.items.reduce((acc, i) => acc + parseValue(i.vl_faturado || i.vl_a_faturar), 0);
+                const weekTotal = week.items.reduce((acc, i) => {
+                    const isFat = parseValue(i.vl_faturado) > 0 || (i.numero_nf && String(i.numero_nf).trim() !== '' && String(i.numero_nf) !== 'None');
+                    return acc + (isFat ? parseValue(i.vl_faturado) : parseValue(i.vl_a_faturar));
+                }, 0);
 
                 const card = document.createElement('div');
                 card.className = 'bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm';
@@ -450,7 +459,7 @@
                                                     ${isFaturado ? (item.numero_nf ? `FATURADO (NF ${item.numero_nf})` : 'FATURADO') : 'PENDENTE'}
                                                 </span>
                                             </td>
-                                            <td class="p-3 text-center font-bold ${isFaturado ? 'text-emerald-400' : 'text-blue-400'}">${formatDateOnly(item.entrega_normalizada || item.dt_prevista_fat)}</td>
+                                            <td class="p-3 text-center font-bold ${isFaturado ? 'text-emerald-400' : 'text-blue-400'}">${formatDateOnly(item.entrega_normalizada)}</td>
                                             <td class="p-3 text-right font-mono font-bold ${isFaturado ? 'text-emerald-400' : 'text-slate-200'}">${formatBRL(valorExibir)}</td>
                                             <td class="p-3 text-center">
                                                 <button onclick='openEditModal(${payload})' class="p-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/20 transition flex items-center justify-center gap-1 mx-auto font-bold text-[10px]">
@@ -471,7 +480,6 @@
             lucide.createIcons();
         }
 
-        // FUNÇÕES DO MODAL DE ALTERAÇÃO DA DATA
         function openEditModal(item) {
             selectedItemModal = item;
 
@@ -479,7 +487,7 @@
             document.getElementById('mModalTitle').textContent = item.descricao || item.cliente || '';
 
             const inputDate = document.getElementById('inputNewDate');
-            const dtAtual = item.entrega_normalizada || item.dt_prevista_fat || '';
+            const dtAtual = item.entrega_normalizada || '';
             if (dtAtual && dtAtual.length >= 10) {
                 inputDate.value = dtAtual.substring(0, 10);
             } else {
@@ -511,7 +519,6 @@
                 return;
             }
 
-            // Pega o nome do usuário logado na sessão ou coloca 'SISTEMA' se não encontrar
             const sessionUser = localStorage.getItem('sintercan_user');
             let usuarioLogado = 'SISTEMA';
             if (sessionUser) {
@@ -559,7 +566,6 @@
             }
         }
 
-        // EXPORTAÇÃO EXCEL NATIVA DA TELA
         function exportToExcel() {
             if (rawData.length === 0) {
                 alert('Não há dados para exportar.');
@@ -571,12 +577,17 @@
             const selectedYear = currentDate.getFullYear();
             const selectedMonth = currentDate.getMonth();
 
+            const now = new Date();
+            const isMesPassado = (selectedYear < now.getFullYear()) || (selectedYear === now.getFullYear() && selectedMonth < now.getMonth());
+
             let items = rawData.filter(item => {
                 const fat = parseValue(item.vl_faturado);
                 const temNF = item.numero_nf && String(item.numero_nf).trim() !== '' && String(item.numero_nf) !== 'None';
                 const isFaturado = fat > 0 || temNF;
 
-                let dtRefStr = isFaturado ? (item.dt_emissao || item.entrega_normalizada) : (item.entrega_normalizada || item.dt_previsao_entrega);
+                if (isMesPassado && !isFaturado) return false;
+
+                const dtRefStr = item.entrega_normalizada;
                 if (!dtRefStr) return false;
 
                 const date = new Date(dtRefStr);
@@ -615,7 +626,7 @@
                     `"${formatDateOnly(item.dt_previsao_entrega)}"`,
                     `"${isFaturado ? 'FATURADO' : 'PENDENTE'}"`,
                     `"${item.numero_nf || ''}"`,
-                    `"${formatDateOnly(item.entrega_normalizada || item.dt_prevista_fat)}"`,
+                    `"${formatDateOnly(item.entrega_normalizada)}"`,
                     valorExibir.toFixed(2).replace('.', ',')
                 ];
 
