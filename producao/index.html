@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Favicon (Ícone da Aba do Navegador) -->
-<link rel="icon" type="image/png" href="LOGO MINIMALISTA.png">
-<link rel="apple-touch-icon" href="LOGO MINIMALISTA.png">
+    <!-- Favicon (Ícone da Aba do Navegador) -->
+    <link rel="icon" type="image/png" href="../LOGO MINIMALISTA.png">
+    <link rel="apple-touch-icon" href="../LOGO MINIMALISTA.png">
 
-<!-- Meta Tags para Prévia no WhatsApp / Redes Sociais (Open Graph) -->
-<meta property="og:title" content="Controle Semanal de Produção | Consultoria RF">
-<meta property="og:description" content="Dashboard de acompanhamento e controle de produção.">
-<meta property="og:image" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/LOGO MINIMALISTA.png">
-<meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="500">
-<meta property="og:image:height" content="500">
-<meta property="og:url" content="https://consultoriarf.net/PRODUCAO_SINTERCAN/">
-<meta property="og:type" content="website">
+    <!-- Meta Tags para Prévia no WhatsApp / Redes Sociais -->
+    <meta property="og:title" content="Controle Semanal de Produção | Consultoria RF">
+    <meta property="og:description" content="Dashboard de acompanhamento e controle de produção.">
+    <meta property="og:image" content="https://consultoriarf.net/sintercan/LOGO MINIMALISTA.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="500">
+    <meta property="og:image:height" content="500">
+    <meta property="og:url" content="https://consultoriarf.net/sintercan/producao/">
+    <meta property="og:type" content="website">
     
     <title>Programação Semanal de Produção Sintercan V6.5</title>
     <!-- Tailwind CSS -->
@@ -36,10 +36,13 @@
     <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
             
-            <!-- Título & Logo Maior no Cabeçalho -->
+            <!-- Botão Voltar & Título -->
             <div class="flex items-center gap-4">
+                <a href="../" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700 flex items-center justify-center" title="Voltar ao Menu">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
                 <div class="flex items-center justify-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 shadow-inner">
-                    <img src="./logo.png" alt="Logo" class="h-10 max-h-12 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <img src="../logo.png" alt="Logo" class="h-10 max-h-12 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <div class="hidden p-2 bg-amber-500 rounded-xl text-slate-950 font-bold items-center justify-center">
                         <i data-lucide="factory" class="w-6 h-6"></i>
                     </div>
@@ -72,8 +75,13 @@
                 </button>
             </div>
 
-            <!-- Botão Atualizar -->
+            <!-- Botões de Ação -->
             <div class="flex items-center gap-2">
+                <button id="btnToggleValues" onclick="toggleValuesVisibility()" class="hidden items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-semibold text-xs transition">
+                    <i data-lucide="eye" class="w-4 h-4" id="eyeIcon"></i>
+                    <span id="lblToggleValues">Ocultar Valores</span>
+                </button>
+
                 <button id="btnRefresh" onclick="fetchData()" class="flex items-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs transition-all shadow">
                     <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
                     Atualizar Dados
@@ -277,6 +285,21 @@
     </div>
 
     <script>
+        // VALIDAÇÃO DE SESSÃO E NÍVEIS DE ACESSO
+        const sessionData = localStorage.getItem('sintercan_user');
+        if (!sessionData) {
+            window.location.href = '../';
+        }
+
+        const currentUser = JSON.parse(sessionData);
+        const hasAccessValores = Number(currentUser.u_producao_valor) === 1;
+        const hasAccessProducao = Number(currentUser.u_producao) === 1 || hasAccessValores;
+
+        if (!hasAccessProducao) {
+            alert("Acesso negado para este módulo.");
+            window.location.href = '../';
+        }
+
         const API_URL = 'https://sintercan.consultoriarf.net/PRODUCAO';
         let rawData = [];
         let currentOSItem = null;
@@ -286,11 +309,53 @@
         let onlyCurrentMonth = true;
         let onlyWithBudget = true;
         let sortMode = 'date'; // 'date' ou 'client'
+        let valuesVisible = hasAccessValores;
 
         document.addEventListener('DOMContentLoaded', () => {
+            if (hasAccessValores) {
+                const btnToggle = document.getElementById('btnToggleValues');
+                btnToggle.classList.remove('hidden');
+                btnToggle.classList.add('flex');
+            }
             lucide.createIcons();
             fetchData();
         });
+
+        function toggleValuesVisibility() {
+            if (!hasAccessValores) return;
+
+            valuesVisible = !valuesVisible;
+            const lbl = document.getElementById('lblToggleValues');
+            const icon = document.getElementById('eyeIcon');
+
+            if (valuesVisible) {
+                lbl.textContent = "Ocultar Valores";
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                lbl.textContent = "Mostrar Valores";
+                icon.setAttribute('data-lucide', 'eye');
+            }
+
+            lucide.createIcons();
+            renderCalendar();
+        }
+
+        function parseValue(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            
+            if (typeof val === 'string' && /[a-zA-Z]/.test(val) && !val.includes('R$')) return 0;
+
+            let str = val.toString().replace(/[^\d,-]/g, '').replace(',', '.');
+            return parseFloat(str) || 0;
+        }
+
+        function formatBRL(val) {
+            if (!hasAccessValores || !valuesVisible) {
+                return 'R$ ***,**';
+            }
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseValue(val));
+        }
 
         async function fetchData() {
             const icon = document.getElementById('refreshIcon');
@@ -320,7 +385,6 @@
                         const totalQtdOrcamento = matches.reduce((acc, m) => acc + parseValue(m[3]), 0) || parseValue(item.qtde_restante_orcamento) || 1;
                         const totalPrecoOS = parseValue(item.preco_geral_a_vista);
 
-                        // Agrupa sub-orçamentos que compartilham a MESMA DATA DE ENTREGA na mesma OS
                         const groupedByDate = {};
 
                         matches.forEach(match => {
@@ -447,7 +511,6 @@
             const comprasSelect = document.getElementById('comprasFilter');
             const terceirosSelect = document.getElementById('terceirosFilter');
 
-            // Salva valores selecionados para não perder ao atualizar
             const currentClient = clientSelect.value;
             const currentCompras = comprasSelect.value;
             const currentTerceiros = terceirosSelect.value;
@@ -478,7 +541,6 @@
                 terceirosSelect.appendChild(new Option(val, val, false, false)).className = 'bg-slate-900';
             });
 
-            // Restaura o filtro selecionado previamente
             clientSelect.value = currentClient;
             comprasSelect.value = currentCompras;
             terceirosSelect.value = currentTerceiros;
@@ -522,20 +584,6 @@
                 btn.className = "px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 border border-emerald-600 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm";
             }
             renderCalendar();
-        }
-
-        function parseValue(val) {
-            if (val === null || val === undefined || val === '') return 0;
-            if (typeof val === 'number') return isNaN(val) ? 0 : val;
-            
-            if (typeof val === 'string' && /[a-zA-Z]/.test(val) && !val.includes('R$')) return 0;
-
-            let str = val.toString().replace(/[^\d,-]/g, '').replace(',', '.');
-            return parseFloat(str) || 0;
-        }
-
-        function formatBRL(val) {
-            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseValue(val));
         }
 
         function getSplitWeekDetails(itemDate) {
@@ -585,7 +633,6 @@
                 const date = new Date(item.entrega_normalizada);
                 if (isNaN(date)) return false;
 
-                // Se houver pesquisa por texto, IGNORA o filtro de mês e busca em TODO o banco
                 if (!search && onlyCurrentMonth) {
                     if (date.getMonth() !== currentDate.getMonth() || date.getFullYear() !== currentDate.getFullYear()) {
                         return false;
