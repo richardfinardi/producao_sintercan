@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sintercan - Controle de Estoque V1</title>
+  <title>Sintercan - Estoque de Produto Acabado</title>
   
-  <!-- Favicon EXCLUSIVO no navegador -->
+  <!-- Favicon -->
   <link rel="icon" type="image/png" href="../LOGO MINIMALISTA.png" />
 
   <!-- Tailwind CSS -->
@@ -45,11 +45,14 @@
     <div class="max-w-[1700px] mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-4">
       
       <div class="flex items-center gap-4">
+        <a href="../" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700 flex items-center justify-center" title="Voltar ao Menu">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
         <img src="../logo.png" alt="Consultoria RF" class="h-10 w-auto object-contain" />
         <div class="h-8 w-[1px] bg-slate-800 hidden sm:block"></div>
         <div>
           <h1 class="text-sm font-black tracking-wider text-white uppercase leading-tight">Sintercan</h1>
-          <p class="text-[10px] text-slate-400 font-medium leading-tight">Controle de Estoque & Materiais V1</p>
+          <p class="text-[10px] text-slate-400 font-medium leading-tight">Estoque de Produto Acabado</p>
         </div>
       </div>
 
@@ -182,6 +185,18 @@
   </main>
 
   <script>
+    // VALIDAÇÃO DE SESSÃO E PERMISSÃO DE ACESSO
+    const sessionData = localStorage.getItem('sintercan_user');
+    if (!sessionData) {
+        window.location.href = '../';
+    }
+
+    const currentUser = JSON.parse(sessionData);
+    if (Number(currentUser.u_estoque_pa) !== 1) {
+        alert("Acesso negado para este módulo.");
+        window.location.href = '../';
+    }
+
     const API_ESTOQUE = 'https://sintercan.consultoriarf.net/estoque_sc';
     const API_ORCAMENTO = 'https://sintercan.consultoriarf.net/estoque_sc_orc';
 
@@ -192,7 +207,6 @@
     let sortColumn = 'cod_os_completo';
     let sortDirection = 'asc';
 
-    // Formatação de data estilo Power BI (DD/MM/YY)
     function formatDate(dateStr) {
       if (!dateStr) return '';
       const d = new Date(dateStr);
@@ -339,7 +353,6 @@
       const activeBtn = document.getElementById(`tab-${tab}`);
       if (activeBtn) activeBtn.classList.add('tab-active');
 
-      // Oculta filtro de OS na aba de orçamentos
       const wrapperOs = document.getElementById('wrapperFilterOs');
       if (tab === 'orcamento') {
         wrapperOs.classList.add('hidden');
@@ -389,7 +402,6 @@
       if (prodVal) filtered = filtered.filter(i => i.codigo_interno === prodVal);
       if (cliVal) filtered = filtered.filter(i => i.cliente === cliVal);
 
-      // Ordenação Dinâmica
       filtered.sort((a, b) => {
         let valA = a[sortColumn] ?? '';
         let valB = b[sortColumn] ?? '';
@@ -406,14 +418,12 @@
         return 0;
       });
 
-      // KPIs
       document.getElementById('kpiTotalItens').textContent = filtered.length;
       document.getElementById('kpiQtdSolicitada').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_solicitada) || 0), 0);
       document.getElementById('kpiQtdDisponivel').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_disponivel) || 0), 0);
       document.getElementById('kpiQtdProduzindo').textContent = filtered.reduce((a, b) => a + (Number(b.qtde_produzindo) || 0), 0);
       document.getElementById('totalCount').textContent = filtered.length;
 
-      // Header
       document.getElementById('tableHeader').innerHTML = config.cols.map(c => {
         const isSorted = sortColumn === c.key;
         const icon = isSorted ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : '';
@@ -426,7 +436,6 @@
         `;
       }).join('');
 
-      // Body
       document.getElementById('tableBody').innerHTML = filtered.map(row => `
         <tr>
           ${config.cols.map(c => {
@@ -442,7 +451,6 @@
         </tr>
       `).join('');
 
-      // Footer
       const sumsContainer = document.getElementById('footerSums');
       sumsContainer.innerHTML = '';
       config.cols.filter(c => c.sum).forEach(c => {
