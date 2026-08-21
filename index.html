@@ -67,11 +67,28 @@
             checkSession();
         });
 
-        function checkSession() {
+        async function checkSession() {
             const userData = localStorage.getItem('sintercan_user');
             if (userData) {
                 const user = JSON.parse(userData);
-                showMenu(user);
+                try {
+                    // Consulta o banco para atualizar permissões em tempo real
+                    const res = await fetch(`${API_URL}/me`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ usuario: user.nome })
+                    });
+
+                    if (res.ok) {
+                        const updatedData = await res.json();
+                        localStorage.setItem('sintercan_user', JSON.stringify(updatedData));
+                        showMenu(updatedData);
+                    } else {
+                        logout();
+                    }
+                } catch (e) {
+                    showMenu(user); // Caso a API falhe temporariamente, mantém a sessão local
+                }
             }
         }
 
