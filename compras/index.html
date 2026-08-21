@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compras - Sintercan</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../LOGO MINIMALISTA.png">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #0f172a; color: #f8fafc; }
+    </style>
+</head>
+<body class="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-2.5 flex justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <a href="../" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700 flex items-center justify-center" title="Voltar ao Menu">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <div class="flex items-center justify-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 shadow-inner">
+                    <img src="../logo.png" alt="Logo" class="h-9 max-h-10 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="hidden p-2 bg-amber-500 rounded-xl text-slate-950 font-bold items-center justify-center">
+                        <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-lg font-extrabold tracking-wide text-white">Sintercan</h1>
+                    <p class="text-[10px] text-slate-400 font-medium">Dashboard de Compras</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL (POWER BI TELA CHEIA) -->
+    <main class="flex-1 w-full h-full bg-slate-950">
+        <iframe 
+            title="COMPRAS SINTERCAN" 
+            class="w-full h-full border-0" 
+            src="https://app.powerbi.com/view?r=eyJrIjoiODRhOWU4Y2ItZTJjNS00YmE0LTkzZDEtMjUyM2Y0ZWE3ZjI1IiwidCI6ImQ2OWIzZmE3LTBhMGEtNDhhZC1hNDZmLWVhYmM5YzFiMDRjOCJ9" 
+            allowFullScreen="true">
+        </iframe>
+    </main>
+
+    <script>
+        // VALIDAÇÃO DE SESSÃO E PERMISSÃO DE ACESSO
+        const sessionData = localStorage.getItem('sintercan_user');
+        if (!sessionData) {
+            window.location.href = '../';
+        }
+
+        const currentUser = JSON.parse(sessionData);
+        if (Number(currentUser.u_compras) !== 1) {
+            alert("Acesso negado para este módulo.");
+            window.location.href = '../';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
